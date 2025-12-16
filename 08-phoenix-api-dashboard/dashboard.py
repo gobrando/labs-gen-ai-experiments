@@ -991,7 +991,7 @@ ritadecarlo675@gmail.com"""
         st.subheader("📥 Export Report")
         
         # Prepare export data
-        export_data = {
+        _export_data = {
             'Usage Summary': pd.DataFrame([{
                 'Total Users': total_users,
                 'Total Traces': len(analyzer.traces_df),
@@ -1617,7 +1617,7 @@ ritadecarlo675@gmail.com"""
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("**Period 1 (Previous)**")
-            p1_days = st.slider("Days ago (start)", 7, 30, 14, key="p1_days")
+            _p1_days = st.slider("Days ago (start)", 7, 30, 14, key="p1_days")
         with col2:
             st.markdown("**Period 2 (Recent)**")
             p2_days = st.slider("Days to compare", 3, 14, 7, key="p2_days")
@@ -1647,7 +1647,7 @@ ritadecarlo675@gmail.com"""
             
             col1, col2, col3, col4, col5 = st.columns(5)
             
-            p1_metrics = p1.get('metrics', {})
+            _p1_metrics = p1.get('metrics', {})
             p2_metrics = p2.get('metrics', {})
             
             with col1:

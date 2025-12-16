@@ -4,8 +4,8 @@ Processes and analyzes Phoenix trace data
 """
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple
-from datetime import datetime, timedelta
+from typing import List, Dict
+from datetime import datetime
 from collections import Counter, defaultdict
 import logging
 import json
@@ -56,7 +56,7 @@ class TraceAnalyzer:
                     start = pd.to_datetime(processed['start_time'])
                     end = pd.to_datetime(processed['end_time'])
                     processed['latency_s'] = (end - start).total_seconds()
-                except:
+                except Exception:
                     processed['latency_s'] = None
             else:
                 processed['latency_s'] = None
@@ -124,7 +124,7 @@ class TraceAnalyzer:
                                                 query_text = messages[0].get('query', '').strip()
                                                 if query_text and query_text not in ['.', '']:
                                                     has_query = True
-                                    except:
+                                    except Exception:
                                         pass
                         if has_query:
                             trace_counts['referrals'] += 1
@@ -361,7 +361,7 @@ class TraceAnalyzer:
                                 messages = parsed.get('data', {}).get('logger', {}).get('messages_list', [])
                                 if messages and isinstance(messages[0], dict):
                                     user_email = str(messages[0].get('user_email', '')).strip()
-                        except:
+                        except Exception:
                             pass
             
             # Use trace_id as fallback if no user info
@@ -394,7 +394,7 @@ class TraceAnalyzer:
                                     # Check if it's a real query (not just whitespace or a period)
                                     if query_text and query_text not in ['.', '']:
                                         has_query = True
-                        except:
+                        except Exception:
                             pass
                 trace_type = 'referrals' if has_query else 'action_plans'
             
@@ -428,7 +428,7 @@ class TraceAnalyzer:
                                         if email_found and '@' in email_found:
                                             user_email = str(email_found).strip()
                                             break
-                                except:
+                                except Exception:
                                     pass
                         
                         # Also check metadata
@@ -1587,7 +1587,7 @@ class TraceAnalyzer:
             return {'message': 'No action plans found to analyze'}
         
         # Parse resources from traces - need to look at the raw span data
-        selected_resources = defaultdict(int)
+        _selected_resources = defaultdict(int)
         resources_by_category = defaultdict(lambda: defaultdict(int))
         
         # Analyze action plan content for resource mentions
@@ -2525,7 +2525,7 @@ class TraceAnalyzer:
             insights.append(f"⚠️ {critical_pct:.0f}% of queries indicate critical urgency - consider priority handling")
         
         # Location insights
-        locations = entity_counts.get('locations', {})
+        _locations = entity_counts.get('locations', {})
         queries_with_location = sum(1 for aq in analyzed_queries if aq['locations'])
         location_rate = queries_with_location / len(analyzed_queries) * 100 if analyzed_queries else 0
         if location_rate < 50:
@@ -2583,7 +2583,7 @@ class TraceAnalyzer:
                                         for item in items:
                                             if isinstance(item, dict):
                                                 resources_found.append(item)
-                    except:
+                    except Exception:
                         output_text += output_attr
                 
                 # Also check attributes for output content
@@ -2591,7 +2591,7 @@ class TraceAnalyzer:
                 if isinstance(attrs, str):
                     try:
                         attrs = json.loads(attrs)
-                    except:
+                    except Exception:
                         attrs = {}
                 
                 if isinstance(attrs, dict):
@@ -2675,12 +2675,12 @@ class TraceAnalyzer:
         factors = []
         
         output_lower = output_text.lower()
-        query_lower = query.lower()
+        _query_lower = query.lower()
         
         # 1. Response length analysis
         output_length = len(output_text)
         too_short = output_length < 100
-        too_long = output_length > 10000
+        _too_long = output_length > 10000
         
         if too_short:
             score -= 20
@@ -2873,7 +2873,7 @@ class TraceAnalyzer:
             if isinstance(attrs, str):
                 try:
                     attrs = json.loads(attrs)
-                except:
+                except Exception:
                     attrs = {}
             
             # Search for resources in various places
@@ -2889,7 +2889,7 @@ class TraceAnalyzer:
                                 resources_to_check.extend(output_data[key])
                     elif isinstance(output_data, list):
                         resources_to_check.extend(output_data)
-                except:
+                except Exception:
                     pass
             
             # Check attributes for output.value containing resources
@@ -2904,7 +2904,7 @@ class TraceAnalyzer:
                                     resources_to_check.extend(ov_data[key])
                         elif isinstance(ov_data, list):
                             resources_to_check.extend(ov_data)
-                    except:
+                    except Exception:
                         pass
             
             # Process found resources
@@ -3058,7 +3058,7 @@ class TraceAnalyzer:
             if isinstance(attrs, str):
                 try:
                     attrs = json.loads(attrs)
-                except:
+                except Exception:
                     attrs = {}
             
             text_to_search = output
