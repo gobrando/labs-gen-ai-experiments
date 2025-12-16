@@ -78,8 +78,8 @@ class TraceAnalyzer:
         if self.df.empty:
             return {}
         
-        # Count traces by type (referrals vs action plans)
-        trace_counts = {'referrals': 0, 'action_plans': 0, 'other': 0}
+        # Count traces by type (referrals vs action plans vs email_results)
+        trace_counts = {'referrals': 0, 'action_plans': 0, 'email_results': 0, 'other': 0}
         if 'trace_id' in self.df.columns and 'name' in self.df.columns and 'parent_id' in self.df.columns:
             # Group by trace_id and find root spans
             from collections import defaultdict
@@ -99,11 +99,37 @@ class TraceAnalyzer:
                         root_spans.append(s)
                 
                 if root_spans:
-                    root_name = str(root_spans[0].get('name', '')).lower()
+                    root_span = root_spans[0]
+                    root_name = str(root_span.get('name', '')).lower()
                     if 'referral' in root_name:
                         trace_counts['referrals'] += 1
                     elif 'action' in root_name and 'plan' in root_name:
                         trace_counts['action_plans'] += 1
+                    elif 'email' in root_name and 'result' in root_name:
+                        trace_counts['email_results'] += 1
+                    elif root_name == 'pipeline.run':
+                        # Legacy Pipeline.run - check if it has a query to determine type
+                        attrs = root_span.get('attributes', {})
+                        has_query = False
+                        if isinstance(attrs, dict):
+                            input_data = attrs.get('input', {})
+                            if isinstance(input_data, dict):
+                                input_value = input_data.get('value', '')
+                                if isinstance(input_value, str):
+                                    try:
+                                        parsed = json.loads(input_value)
+                                        if isinstance(parsed, dict):
+                                            messages = parsed.get('data', {}).get('logger', {}).get('messages_list', [])
+                                            if messages and isinstance(messages[0], dict):
+                                                query_text = messages[0].get('query', '').strip()
+                                                if query_text and query_text not in ['.', '']:
+                                                    has_query = True
+                                    except:
+                                        pass
+                        if has_query:
+                            trace_counts['referrals'] += 1
+                        else:
+                            trace_counts['action_plans'] += 1
                     else:
                         trace_counts['other'] += 1
         
@@ -349,6 +375,69 @@ class TraceAnalyzer:
                 trace_type = 'referrals'
             elif 'action' in root_name and 'plan' in root_name:
                 trace_type = 'action_plans'
+            elif 'email' in root_name and 'result' in root_name:
+                trace_type = 'email_results'
+            elif root_name == 'pipeline.run':
+                # Legacy Pipeline.run traces - categorize based on whether they have a query
+                # If has query text -> referral search, if no query -> action plan
+                has_query = False
+                input_data = attrs.get('input', {})
+                if isinstance(input_data, dict):
+                    input_value = input_data.get('value', '')
+                    if isinstance(input_value, str):
+                        try:
+                            parsed = json.loads(input_value)
+                            if isinstance(parsed, dict):
+                                messages = parsed.get('data', {}).get('logger', {}).get('messages_list', [])
+                                if messages and isinstance(messages[0], dict):
+                                    query_text = messages[0].get('query', '').strip()
+                                    # Check if it's a real query (not just whitespace or a period)
+                                    if query_text and query_text not in ['.', '']:
+                                        has_query = True
+                        except:
+                            pass
+                trace_type = 'referrals' if has_query else 'action_plans'
+            
+            # For email_result traces, try to find the original requesting user
+            # by looking through all span attributes for user info
+            if trace_type == 'email_results' and (not user_email or user_email.startswith('unknown_')):
+                for span in trace_spans:
+                    span_attrs = span.get('attributes', {})
+                    if isinstance(span_attrs, dict):
+                        # Check input data for user email
+                        input_data = span_attrs.get('input', {})
+                        if isinstance(input_data, dict):
+                            input_value = input_data.get('value', '')
+                            if isinstance(input_value, str):
+                                try:
+                                    parsed = json.loads(input_value)
+                                    if isinstance(parsed, dict):
+                                        # Look for user_email in various locations
+                                        email_found = parsed.get('user_email', '')
+                                        if not email_found:
+                                            # Try nested structures
+                                            data = parsed.get('data', {})
+                                            if isinstance(data, dict):
+                                                email_found = data.get('user_email', '')
+                                                if not email_found:
+                                                    logger_data = data.get('logger', {})
+                                                    if isinstance(logger_data, dict):
+                                                        messages = logger_data.get('messages_list', [])
+                                                        if messages and isinstance(messages[0], dict):
+                                                            email_found = messages[0].get('user_email', '')
+                                        if email_found and '@' in email_found:
+                                            user_email = str(email_found).strip()
+                                            break
+                                except:
+                                    pass
+                        
+                        # Also check metadata
+                        metadata = span_attrs.get('metadata', {})
+                        if isinstance(metadata, dict):
+                            email_found = metadata.get('user_email', '') or metadata.get('user_id', '')
+                            if email_found and '@' in str(email_found):
+                                user_email = str(email_found).strip()
+                                break
             
             # Gather query/category/location context from all spans in the trace
             context = self._extract_trace_context(trace_spans)
@@ -504,18 +593,85 @@ class TraceAnalyzer:
             trace_duration = (trace_end - trace_start).total_seconds() if trace_start and trace_end else None
             
             # Count spans by type
-            llm_spans = [s for s in trace_spans if 'llm' in s.get('span_kind', '').lower()]
-            
-            # Extract token counts from LLM spans
+            llm_spans = [s for s in trace_spans if 'llm' in str(s.get('span_kind', '')).lower()]
+
+            def _coerce_int(value) -> int:
+                """Best-effort coercion of Phoenix attribute values into ints."""
+                if value is None:
+                    return 0
+                if isinstance(value, dict):
+                    value = value.get('value', 0)
+                try:
+                    # Handles ints, floats, numpy scalars, and numeric strings
+                    return int(float(value))
+                except Exception:
+                    return 0
+
+            def _extract_span_total_tokens(span_obj: Dict) -> int:
+                """Extract total token count from a span across multiple possible Phoenix schemas."""
+                attrs_obj = span_obj.get('attributes', {})
+                if not isinstance(attrs_obj, dict):
+                    return 0
+
+                # Common flat keys (what Phoenix often emits in this project)
+                flat = (
+                    attrs_obj.get('llm.token_count.total') or
+                    attrs_obj.get('llm.token_count_total') or
+                    attrs_obj.get('token_count_total')
+                )
+                flat_val = _coerce_int(flat)
+                if flat_val:
+                    return flat_val
+
+                # Nested schema: {"llm": {"token_count": {"total": ...}}}
+                llm_info = attrs_obj.get('llm', {})
+                if isinstance(llm_info, dict):
+                    token_count = llm_info.get('token_count', {})
+                    if isinstance(token_count, dict):
+                        return _coerce_int(token_count.get('total'))
+
+                return 0
+
+            # Extract token counts from spans.
+            # Prefer LLM spans if they exist; otherwise fall back to any spans with token fields.
+            token_source_spans = llm_spans if llm_spans else trace_spans
             total_tokens = 0
-            for span in llm_spans:
-                span_attrs = span.get('attributes', {})
-                if isinstance(span_attrs, dict):
-                    llm_info = span_attrs.get('llm', {})
-                    if isinstance(llm_info, dict):
-                        token_count = llm_info.get('token_count', {})
-                        if isinstance(token_count, dict):
-                            total_tokens += token_count.get('total', 0)
+            for span in token_source_spans:
+                total_tokens += _extract_span_total_tokens(span)
+
+            # If token instrumentation isn't present, fall back to a rough estimate based on input/output size.
+            # This is useful for correlating "bigger prompt/response" with "slower traces".
+            tokens_estimated = False
+            if total_tokens == 0:
+                def _estimate_tokens_from_value(v) -> int:
+                    if v is None:
+                        return 0
+                    if isinstance(v, dict):
+                        v = v.get('value', v)
+                    try:
+                        text = str(v)
+                    except Exception:
+                        return 0
+                    text = text.strip()
+                    if not text:
+                        return 0
+                    # Heuristic: ~4 chars per token (varies by language/content).
+                    return max(1, int(len(text) / 4))
+
+                estimated = 0
+                for span in trace_spans:
+                    span_attrs = span.get('attributes', {})
+                    if not isinstance(span_attrs, dict):
+                        continue
+                    estimated += _estimate_tokens_from_value(span_attrs.get('input'))
+                    estimated += _estimate_tokens_from_value(span_attrs.get('output'))
+                    # A few common alternates just in case:
+                    estimated += _estimate_tokens_from_value(span_attrs.get('llm.input_messages'))
+                    estimated += _estimate_tokens_from_value(span_attrs.get('llm.output_messages'))
+
+                if estimated > 0:
+                    total_tokens = estimated
+                    tokens_estimated = True
             
             # Deduplicate zip codes before storing
             if zip_codes:
@@ -541,6 +697,7 @@ class TraceAnalyzer:
                 'span_count': len(trace_spans),
                 'llm_span_count': len(llm_spans),
                 'total_tokens': total_tokens,
+                'tokens_estimated': tokens_estimated,
                 'query': query[:500] if query else '',  # Limit query length
                 'category': category,
                 'zip_code': primary_zip,
@@ -929,6 +1086,7 @@ class TraceAnalyzer:
             'trace_type': lambda x: {
                 'referrals': (x == 'referrals').sum(),
                 'action_plans': (x == 'action_plans').sum(),
+                'email_results': (x == 'email_results').sum(),
                 'other': (x == 'other').sum()
             },
             'trace_start': ['min', 'max'],
@@ -946,12 +1104,13 @@ class TraceAnalyzer:
         # Expand trace type breakdown
         user_stats['referrals_count'] = user_stats['trace_type_breakdown'].apply(lambda x: x.get('referrals', 0) if isinstance(x, dict) else 0)
         user_stats['action_plans_count'] = user_stats['trace_type_breakdown'].apply(lambda x: x.get('action_plans', 0) if isinstance(x, dict) else 0)
+        user_stats['email_results_count'] = user_stats['trace_type_breakdown'].apply(lambda x: x.get('email_results', 0) if isinstance(x, dict) else 0)
         user_stats['other_count'] = user_stats['trace_type_breakdown'].apply(lambda x: x.get('other', 0) if isinstance(x, dict) else 0)
         
         # Sort by total traces descending
         user_stats = user_stats.sort_values('total_traces', ascending=False)
         
-        return user_stats[['user_email', 'user_name', 'total_traces', 'referrals_count', 'action_plans_count', 'other_count', 
+        return user_stats[['user_email', 'user_name', 'total_traces', 'referrals_count', 'action_plans_count', 'email_results_count', 'other_count', 
                            'first_trace', 'last_trace', 'avg_duration_s', 'total_tokens']]
     
     def get_trace_time_series(self, freq: str = 'H') -> pd.DataFrame:
@@ -976,14 +1135,16 @@ class TraceAnalyzer:
         # Add trace type counts separately
         referrals_ts = df_time[df_time['trace_type'] == 'referrals'].groupby(pd.Grouper(freq=freq)).size()
         action_plans_ts = df_time[df_time['trace_type'] == 'action_plans'].groupby(pd.Grouper(freq=freq)).size()
+        email_results_ts = df_time[df_time['trace_type'] == 'email_results'].groupby(pd.Grouper(freq=freq)).size()
         
         # Merge with main time series
         time_series = time_series.set_index('trace_start')
         time_series['referrals_count'] = referrals_ts.reindex(time_series.index, fill_value=0)
         time_series['action_plans_count'] = action_plans_ts.reindex(time_series.index, fill_value=0)
+        time_series['email_results_count'] = email_results_ts.reindex(time_series.index, fill_value=0)
         time_series = time_series.reset_index()
         
-        time_series.columns = ['timestamp', 'trace_count', 'avg_duration', 'total_tokens', 'referrals_count', 'action_plans_count']
+        time_series.columns = ['timestamp', 'trace_count', 'avg_duration', 'total_tokens', 'referrals_count', 'action_plans_count', 'email_results_count']
         
         return time_series
     
@@ -1186,28 +1347,91 @@ class TraceAnalyzer:
             'total_unique': len(zip_counts)
         }
     
-    def get_cohort_analysis(self, cohort_emails: List[str]) -> Dict:
+    def get_cohort_analysis(self, cohort_emails: List[str], cohort_name: str = "Cohort") -> Dict:
         """
         Analyze usage for a specific cohort of users (e.g., G1 users)
         
         Args:
             cohort_emails: List of email addresses in the cohort
+            cohort_name: Name of the cohort for display purposes
         """
         if self.traces_df.empty:
-            return {}
+            return {
+                'cohort_name': cohort_name,
+                'active_users': [],
+                'non_users': [{'email': e, 'name': e.split('@')[0] if '@' in e else e, 'trace_count': 0, 'status': 'not_used'} for e in cohort_emails],
+                'total_cohort': len(cohort_emails),
+                'active_count': 0,
+                'inactive_count': len(cohort_emails),
+                'adoption_rate': 0
+            }
         
         cohort_users = []
         non_users = []
         
         # Get all users who have traces
-        active_users = set(self.traces_df['user_email'].unique())
+        active_users_df = self.traces_df[['user_email']].drop_duplicates()
         
-        for email in cohort_emails:
-            if email in active_users:
-                user_traces = self.traces_df[self.traces_df['user_email'] == email]
+        # Build multiple lookup maps for flexible matching
+        # 1. Full email (lowercase) -> original trace email
+        full_email_map = {}
+        # 2. Username only (before @, lowercase) -> original trace email  
+        username_map = {}
+        # 3. Username with common domain variations
+        
+        for _, row in active_users_df.iterrows():
+            email = row['user_email']
+            if email and isinstance(email, str) and not email.startswith('unknown_'):
+                email_lower = email.lower().strip()
+                full_email_map[email_lower] = email
+                
+                if '@' in email:
+                    username = email.split('@')[0].lower().strip()
+                    # Only use username map if we don't already have this username
+                    # (prevents conflicts when same username exists with different domains)
+                    if username not in username_map:
+                        username_map[username] = email
+        
+        for cohort_email in cohort_emails:
+            cohort_email_lower = cohort_email.lower().strip()
+            matched_trace_email = None
+            
+            # Method 1: Exact email match (case-insensitive)
+            if cohort_email_lower in full_email_map:
+                matched_trace_email = full_email_map[cohort_email_lower]
+            
+            # Method 2: Match by username only (handles domain typos like gwct.org vs gwctx.org)
+            if not matched_trace_email and '@' in cohort_email:
+                cohort_username = cohort_email.split('@')[0].lower().strip()
+                if cohort_username in username_map:
+                    matched_trace_email = username_map[cohort_username]
+            
+            # Method 3: Check if trace email contains the cohort username with similar domain
+            if not matched_trace_email and '@' in cohort_email:
+                cohort_username = cohort_email.split('@')[0].lower().strip()
+                cohort_domain = cohort_email.split('@')[1].lower().strip()
+                for trace_email_lower, trace_email_orig in full_email_map.items():
+                    if '@' in trace_email_lower:
+                        trace_username = trace_email_lower.split('@')[0]
+                        trace_domain = trace_email_lower.split('@')[1]
+                        # Match if usernames are same and domains are similar (e.g., gwct vs gwctx)
+                        if trace_username == cohort_username:
+                            # Check for similar domains (one is substring of other, or levenshtein distance small)
+                            if (cohort_domain in trace_domain or trace_domain in cohort_domain or
+                                cohort_domain.replace('.org', '') in trace_domain or
+                                trace_domain.replace('.org', '') in cohort_domain):
+                                matched_trace_email = trace_email_orig
+                                break
+            
+            if matched_trace_email:
+                # Get traces for this user (case-insensitive match)
+                user_traces = self.traces_df[
+                    self.traces_df['user_email'].str.lower().str.strip() == matched_trace_email.lower().strip()
+                ]
                 cohort_users.append({
-                    'email': email,
-                    'name': email.split('@')[0] if '@' in email else email,
+                    'email': cohort_email,
+                    'trace_email': matched_trace_email,
+                    'name': cohort_email.split('@')[0].replace('.', ' ').title() if '@' in cohort_email else cohort_email,
                     'trace_count': len(user_traces),
                     'first_trace': user_traces['trace_start'].min(),
                     'last_trace': user_traces['trace_start'].max(),
@@ -1215,8 +1439,8 @@ class TraceAnalyzer:
                 })
             else:
                 non_users.append({
-                    'email': email,
-                    'name': email.split('@')[0] if '@' in email else email,
+                    'email': cohort_email,
+                    'name': cohort_email.split('@')[0].replace('.', ' ').title() if '@' in cohort_email else cohort_email,
                     'trace_count': 0,
                     'status': 'not_used'
                 })
@@ -1225,6 +1449,7 @@ class TraceAnalyzer:
         cohort_users.sort(key=lambda x: x['trace_count'], reverse=True)
         
         return {
+            'cohort_name': cohort_name,
             'active_users': cohort_users,
             'non_users': non_users,
             'total_cohort': len(cohort_emails),

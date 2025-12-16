@@ -11,6 +11,7 @@ import pyarrow.parquet as pq
 import io
 import pandas as pd
 import json
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,10 +98,32 @@ class PhoenixClient:
         # Build GraphQL query for spans with all attributes
         after_clause = f', after: "{cursor}"' if cursor else ''
         
-        # Build time filter - Phoenix uses a different filter format
-        # For now, skip time filtering in GraphQL and filter client-side
-        # since the GraphQL filter syntax is causing errors
+        # Build time filter.
+        # We prefer server-side filtering for efficiency. If the filter format is rejected by Phoenix,
+        # we will retry without the filter and let get_all_spans apply client-side filtering.
         filter_str = ''
+        if start_time or end_time:
+            try:
+                # Phoenix expects ISO timestamps; normalize to UTC.
+                def _iso_utc(dt: datetime) -> str:
+                    if dt is None:
+                        return ''
+                    if dt.tzinfo is None:
+                        # Assume UTC if naive
+                        from datetime import timezone as _tz
+                        dt = dt.replace(tzinfo=_tz.utc)
+                    return dt.astimezone(timedelta(0)).isoformat().replace('+00:00', 'Z')
+
+                start_iso = _iso_utc(start_time) if start_time else ''
+                end_iso = _iso_utc(end_time) if end_time else ''
+                # Best-effort: pass through as args Phoenix commonly accepts. If it errors, we fallback.
+                # (We keep this isolated so failures are handled cleanly.)
+                if start_iso:
+                    filter_str += f', startTime: "{start_iso}"'
+                if end_iso:
+                    filter_str += f', endTime: "{end_iso}"'
+            except Exception:
+                filter_str = ''
         
         graphql_query = f'''
         {{
@@ -138,21 +161,28 @@ class PhoenixClient:
         }}
         '''
         
-        try:
+        def _post(query_text: str) -> Dict:
             url = f"{self.base_url}/graphql"
             headers = self.session.headers.copy()
             headers['Content-Type'] = 'application/json'
-            
             response = requests.post(
                 url,
                 headers=headers,
-                json={'query': graphql_query},
+                json={'query': query_text},
                 timeout=30
             )
             response.raise_for_status()
-            
-            data = response.json()
-            
+            return response.json()
+
+        try:
+            data = _post(graphql_query)
+
+            # If time-filtered query errors, retry without filter and let client-side filtering handle it.
+            if 'errors' in data and filter_str:
+                logger.warning("GraphQL rejected time filter; retrying without server-side time filtering.")
+                graphql_query_no_filter = graphql_query.replace(filter_str, '')
+                data = _post(graphql_query_no_filter)
+
             if 'errors' in data:
                 logger.error(f"GraphQL errors: {data['errors']}")
                 return {'data': [], 'next_cursor': None}
@@ -223,11 +253,16 @@ class PhoenixClient:
         """
         all_spans = []
         cursor = None
+        started = time.time()
+        page = 0
         
         while len(all_spans) < max_spans:
+            page += 1
             response = self.get_spans(
                 project_id=project_id,
-                # Don't pass time filters to GraphQL, filter client-side
+                # Prefer server-side filtering; get_spans will retry without it if Phoenix rejects the filter.
+                start_time=start_time,
+                end_time=end_time,
                 cursor=cursor,
                 limit=min(1000, max_spans - len(all_spans))
             )
@@ -287,7 +322,15 @@ class PhoenixClient:
             if not cursor:
                 break
             
-            logger.info(f"Fetched {len(all_spans)} spans so far...")
+            elapsed = time.time() - started
+            logger.info(
+                f"Fetched {len(all_spans)} spans so far... "
+                f"(page={page}, elapsed={elapsed:.1f}s, cursor={'set' if cursor else 'none'})"
+            )
+            if elapsed > 60 and page % 5 == 0:
+                logger.warning(
+                    f"Span fetch running long: {elapsed:.1f}s elapsed, {len(all_spans)} spans fetched (page={page})."
+                )
         
         return all_spans[:max_spans]
     

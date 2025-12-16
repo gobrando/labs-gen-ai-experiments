@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
 
@@ -46,9 +47,11 @@ def get_phoenix_client(api_url, api_key):
     return PhoenixClient(api_url, api_key)
 
 
-@st.cache_data(ttl=300)  # Cache for 5 minutes
-def load_data(_client, project_id, start_time, end_time, max_spans):
+@st.cache_data(ttl=43200)  # Cache for 12 hours (trace data changes slowly)
+def load_data(_client, project_id, start_time, end_time, max_spans, cache_bust: str = "0"):
     """Load spans data from Phoenix API"""
+    if start_time and end_time and end_time <= start_time:
+        raise ValueError("end_time must be after start_time")
     spans = _client.get_all_spans(
         project_id=project_id,
         start_time=start_time,
@@ -121,8 +124,21 @@ def main():
         
         st.divider()
         
-        # Load data button
-        load_button = st.button("🔄 Load Data", type="primary", use_container_width=True)
+        # Load/refresh controls
+        if 'cache_bust' not in st.session_state:
+            st.session_state.cache_bust = "0"
+
+        col1, col2 = st.columns(2)
+        with col1:
+            load_button = st.button("🔄 Load Data", type="primary", use_container_width=True)
+        with col2:
+            force_refresh = st.button(
+                "♻️ Force Refresh",
+                help="Bypasses the cache and re-pulls from Phoenix immediately.",
+                use_container_width=True
+            )
+            if force_refresh:
+                st.session_state.cache_bust = str(datetime.now(timezone.utc).timestamp())
     
     # Initialize session state
     if 'analyzer' not in st.session_state:
@@ -142,7 +158,8 @@ def main():
                     project_id if project_id else None,
                     start_time,
                     end_time,
-                    max_spans
+                    max_spans,
+                    st.session_state.get('cache_bust', "0")
                 )
             
             if not spans:
@@ -164,11 +181,10 @@ def main():
     analyzer = st.session_state.analyzer
     
     # Main dashboard tabs
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📈 Executive Summary",
-        "📊 Usage Analytics", 
+        "📊 Usage Analytics",
         "📋 Usage Report",
-        "🔍 Quality Analysis",
         "⚡ Performance Metrics",
         "🔎 Log Explorer",
         "🧠 Advanced Analytics"
@@ -251,7 +267,7 @@ def main():
             # Trace counts by type
             if 'trace_counts' in stats:
                 st.subheader("Trace Counts by Type")
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
                     st.metric(
@@ -268,6 +284,13 @@ def main():
                     )
                 
                 with col3:
+                    st.metric(
+                        "Emailing Results",
+                        f"{stats['trace_counts'].get('email_results', 0):,}",
+                        help="Number of traces for emailing results to users"
+                    )
+                
+                with col4:
                     st.metric(
                         "Other Traces",
                         f"{stats['trace_counts']['other']:,}",
@@ -307,11 +330,11 @@ def main():
         if not user_analytics.empty:
             # Display user table with key metrics
             display_cols = ['user_name', 'user_email', 'total_traces', 'referrals_count', 'action_plans_count', 
-                          'first_trace', 'last_trace', 'avg_duration_s', 'total_tokens']
+                          'email_results_count', 'first_trace', 'last_trace', 'avg_duration_s', 'total_tokens']
             
             user_display = user_analytics[display_cols].copy()
             user_display.columns = ['Name', 'Email', 'Total Traces', 'Referrals', 'Action Plans', 
-                                  'First Trace', 'Last Trace', 'Avg Duration (s)', 'Total Tokens']
+                                  'Emails', 'First Trace', 'Last Trace', 'Avg Duration (s)', 'Total Tokens']
             
             # Format dates and handle NaT
             user_display['First Trace'] = pd.to_datetime(user_display['First Trace'], errors='coerce').dt.strftime('%Y-%m-%d %H:%M')
@@ -446,21 +469,148 @@ def main():
                 labels={'avg_duration': 'Duration (s)', 'timestamp': 'Time'}
             )
             st.plotly_chart(fig_duration, use_container_width=True)
+
+        # Organic usage (exclude planned advisory board sessions)
+        st.divider()
+        st.subheader("🌿 Organic Usage (excluding NAB/CAB meeting windows)")
+        st.caption("Filters out traces that occurred during scheduled advisory board meetings, so you can see organic (non-planned) usage trends.")
+
+        exclude_meetings = st.checkbox(
+            "Exclude advisory board meeting windows",
+            value=True,
+            help="If enabled, traces during the listed meeting windows will be counted as 'planned' and removed from 'organic' usage."
+        )
+        meeting_duration_min = st.slider(
+            "Assumed meeting session length (minutes)",
+            min_value=15,
+            max_value=180,
+            value=60,
+            step=15,
+            help="Used to convert each meeting start time into an exclusion window."
+        )
+
+        # Extracted from: Goodwill NAB Sessions.pdf (shared by user)
+        # Source content includes times listed as PT/ET; we normalize using the ET time.
+        default_meeting_starts_et = [
+            # September/October 2025 - NAB Session 2
+            "2025-09-29 13:00", "2025-09-29 15:00",
+            "2025-09-30 14:00", "2025-09-30 15:00",
+            "2025-10-02 14:30",
+            "2025-10-06 13:00",
+            # November 2025 - NAB Session 3
+            "2025-11-04 14:15", "2025-11-04 15:00",
+            "2025-11-05 14:15", "2025-11-05 13:30",
+            "2025-11-06 12:00",
+            "2025-11-07 13:30",
+            "2025-11-10 12:00", "2025-11-10 12:45", "2025-11-10 13:30",
+            # December 2025 - NAB Session 4
+            "2025-12-08 13:00", "2025-12-08 14:00",
+            "2025-12-09 14:00",
+            "2025-12-10 14:00",
+            "2025-12-11 14:00",
+        ]
+
+        with st.expander("📅 Meeting window schedule (editable)", expanded=False):
+            st.markdown("Paste additional meeting start times below (ET), one per line as `YYYY-MM-DD HH:MM`.")
+            additional_starts_text = st.text_area(
+                "Additional meeting starts (ET)",
+                value="",
+                height=120,
+                key="additional_meeting_starts_et"
+            )
+            show_default = st.checkbox("Show default meeting starts extracted from the PDF", value=False)
+            if show_default:
+                st.code("\n".join(default_meeting_starts_et))
+
+        # Build meeting windows in UTC
+        ny_tz = ZoneInfo("America/New_York")
+        meeting_starts_et = list(default_meeting_starts_et)
+        if additional_starts_text.strip():
+            for line in additional_starts_text.splitlines():
+                s = line.strip()
+                if s:
+                    meeting_starts_et.append(s)
+
+        windows_utc = []
+        for s in meeting_starts_et:
+            try:
+                dt_local = datetime.strptime(s, "%Y-%m-%d %H:%M").replace(tzinfo=ny_tz)
+                start_utc = dt_local.astimezone(timezone.utc)
+                end_utc = start_utc + timedelta(minutes=int(meeting_duration_min))
+                windows_utc.append((start_utc, end_utc))
+            except Exception:
+                continue
+
+        if analyzer.traces_df.empty or 'trace_start' not in analyzer.traces_df.columns:
+            st.info("No trace timestamps available to compute organic usage.")
+        else:
+            traces_for_org = analyzer.traces_df.copy()
+            ts_utc = pd.to_datetime(traces_for_org['trace_start'], errors='coerce', utc=True)
+            traces_for_org = traces_for_org.assign(_trace_start_utc=ts_utc).dropna(subset=['_trace_start_utc'])
+
+            planned_mask = pd.Series(False, index=traces_for_org.index)
+            if exclude_meetings and windows_utc:
+                for start_utc, end_utc in windows_utc:
+                    planned_mask = planned_mask | (
+                        (traces_for_org['_trace_start_utc'] >= pd.Timestamp(start_utc)) &
+                        (traces_for_org['_trace_start_utc'] < pd.Timestamp(end_utc))
+                    )
+
+            organic_df = traces_for_org[~planned_mask].copy()
+            planned_df = traces_for_org[planned_mask].copy()
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Traces", f"{len(traces_for_org):,}")
+            with col2:
+                st.metric("Planned (meeting) Traces", f"{len(planned_df):,}")
+            with col3:
+                st.metric("Organic Traces", f"{len(organic_df):,}")
+            with col4:
+                pct = (len(organic_df) / len(traces_for_org) * 100) if len(traces_for_org) else 0
+                st.metric("% Organic", f"{pct:.1f}%")
+
+            # Time series (use the same granularity selection as the main trace chart)
+            ts_freq = freq_map.get(freq, "D")
+
+            total_series = traces_for_org.set_index('_trace_start_utc').resample(ts_freq).size().rename("total_traces")
+            organic_series = organic_df.set_index('_trace_start_utc').resample(ts_freq).size().rename("organic_traces")
+            planned_series = planned_df.set_index('_trace_start_utc').resample(ts_freq).size().rename("planned_traces")
+
+            org_ts = pd.concat([total_series, organic_series, planned_series], axis=1).fillna(0).reset_index().rename(columns={'_trace_start_utc': 'timestamp'})
+            org_ts[['total_traces', 'organic_traces', 'planned_traces']] = org_ts[['total_traces', 'organic_traces', 'planned_traces']].astype(int)
+
+            fig_org = go.Figure()
+            fig_org.add_trace(go.Scatter(
+                x=org_ts['timestamp'], y=org_ts['organic_traces'],
+                name="Organic Traces", line=dict(color="#2ca02c")
+            ))
+            fig_org.add_trace(go.Scatter(
+                x=org_ts['timestamp'], y=org_ts['total_traces'],
+                name="Total Traces", line=dict(color="#1f77b4"), opacity=0.5
+            ))
+            fig_org.add_trace(go.Bar(
+                x=org_ts['timestamp'], y=org_ts['planned_traces'],
+                name="Planned (meeting) Traces", marker_color="#ff7f0e", opacity=0.25
+            ))
+            fig_org.update_layout(
+                title="Organic vs Planned Usage Over Time",
+                barmode="overlay",
+                height=450,
+                xaxis_title="Time",
+                yaxis_title="Trace Count",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig_org, use_container_width=True)
     
     # TAB 3: Usage Report
     with tab3:
         st.header("📋 Comprehensive Usage Report")
         st.markdown("*Detailed breakdown by user level, resource type, and geography*")
         
-        # Report configuration
-        with st.expander("⚙️ Report Configuration", expanded=False):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # G1 cohort emails (can be configured)
-                g1_emails_text = st.text_area(
-                    "G1 User Emails (one per line)",
-                    value="""deaun.hoffman@gwctx.org
+        # Define cohorts with default values
+        # G1 Cohort - Wave 1 users
+        g1_emails_default = """deaun.hoffman@gwctx.org
 herminio.chaparro@gwctx.org
 jeremy.hunt@gwctx.org
 jordan.kelch@gwctx.org
@@ -475,10 +625,106 @@ rachel.mignemi@gwctx.org
 robert.bachman@gwctx.org
 sandra.mcdowell@gwctx.org
 scarlett.miears@gwctx.org
-tavonn.uresti@gwctx.org""",
-                    height=200
+tavonn.uresti@gwctx.org"""
+
+        # G2 Cohort - Wave 2 users
+        g2_emails_default = """adryan.mcguire@gwctx.org
+alyssa.cabello@gwctx.org
+amber.carrizales@gwctx.org
+brenda.warner@gwctx.org
+daniel.ayala@gwctx.org
+dora.mcafee@gwctx.org
+eric.sherman@gwctx.org
+farah.alabdallah@gwctx.org
+jerry.harris@gwctx.org
+josette.krebuszewski@gwctx.org
+marea.warren-hernandez@gwctx.org
+morgan.marley@gwctx.org
+orlando.perez@gwctx.org
+rafal.cygankow@gwctx.org
+roddrick.gaines@gwctx.org
+vincent.giddens@gwctx.org"""
+
+        # G3 Cohort - Wave 3 users
+        g3_emails_default = """ahmarlay.myint@gwctx.org
+alyxandria.currington@gwctx.org
+beth.burnett@gwctx.org
+brian.shade@gwctx.org
+daniella.owens@gwctx.org
+elyse.waugh@gwctx.org
+erin.delorme@gwctx.org
+gyanu.gautam@gwctx.org
+jonah.benedict@gwctx.org
+kennedy.pasquinzo@gwctx.org
+mary.rudinsky@gwctx.org
+natalie.watkins@gwctx.org
+reva.conley@gwctx.org
+samirrah.cooke@gwctx.org
+zwany.batista@gwctx.org"""
+
+        # CAB (Client Advisory Board) users
+        cab_emails_default = """jswann40@yahoo.com
+lukearodriguez07@gmail.com
+malikjkobethomas@gmail.com
+marielacalanchi3@gmail.com
+mtmaguire@gmail.com
+mleake86@gmail.com
+chanelunknown1@gmail.com
+ritadecarlo675@gmail.com"""
+
+        # CAB name lookup (for display purposes)
+        cab_name_lookup = {
+            'jswann40@yahoo.com': 'Jodi Swann',
+            'lukearodriguez07@gmail.com': 'Luke Rodriguez',
+            'malikjkobethomas@gmail.com': 'Malik Jkobe Thomas',
+            'marielacalanchi3@gmail.com': 'Mariela Calanchi',
+            'mtmaguire@gmail.com': 'Mark Maguire',
+            'mleake86@gmail.com': 'Mary Leake',
+            'chanelunknown1@gmail.com': 'Nova Sannoh',
+            'ritadecarlo675@gmail.com': 'Rita DeCarlo'
+        }
+        
+        # Report configuration
+        with st.expander("⚙️ Cohort Configuration", expanded=False):
+            cohort_tab1, cohort_tab2, cohort_tab3, cohort_tab4 = st.tabs(["G1 Users", "G2 Users", "G3 Users", "CAB Users"])
+            
+            with cohort_tab1:
+                g1_emails_text = st.text_area(
+                    "G1 User Emails (one per line)",
+                    value=g1_emails_default,
+                    height=200,
+                    key="g1_config"
                 )
-                g1_emails = [e.strip() for e in g1_emails_text.split('\n') if e.strip()]
+            
+            with cohort_tab2:
+                g2_emails_text = st.text_area(
+                    "G2 User Emails (one per line)",
+                    value=g2_emails_default,
+                    height=200,
+                    key="g2_config"
+                )
+            
+            with cohort_tab3:
+                g3_emails_text = st.text_area(
+                    "G3 User Emails (one per line)",
+                    value=g3_emails_default,
+                    height=200,
+                    key="g3_config"
+                )
+            
+            with cohort_tab4:
+                cab_emails_text = st.text_area(
+                    "CAB User Emails (one per line)",
+                    value=cab_emails_default,
+                    height=200,
+                    key="cab_config"
+                )
+        
+        # Parse emails
+        g1_emails = [e.strip() for e in g1_emails_text.split('\n') if e.strip()]
+        g2_emails = [e.strip() for e in g2_emails_text.split('\n') if e.strip()]
+        g3_emails = [e.strip() for e in g3_emails_text.split('\n') if e.strip()]
+        cab_emails = [e.strip() for e in cab_emails_text.split('\n') if e.strip()]
         
         # Generate comprehensive report
         usage_breakdown = analyzer.get_usage_breakdown_by_level()
@@ -487,7 +733,7 @@ tavonn.uresti@gwctx.org""",
         
         # Overall metrics
         st.subheader("✅ Total Usage Summary")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
         
         total_users = (len(usage_breakdown['high']) + 
                       len(usage_breakdown['medium']) + 
@@ -503,6 +749,9 @@ tavonn.uresti@gwctx.org""",
         with col4:
             action_plans = len(analyzer.traces_df[analyzer.traces_df['trace_type'] == 'action_plans'])
             st.metric("Action Plans", action_plans)
+        with col5:
+            email_results = len(analyzer.traces_df[analyzer.traces_df['trace_type'] == 'email_results'])
+            st.metric("Emails Sent", email_results)
         
         st.divider()
         
@@ -532,37 +781,143 @@ tavonn.uresti@gwctx.org""",
         
         st.divider()
         
-        # G1 Cohort Analysis
-        if g1_emails:
-            st.subheader("✔️ G1 User Cohort Analysis")
-            cohort = analyzer.get_cohort_analysis(g1_emails)
+        # All Cohorts Analysis
+        st.subheader("👥 User Cohort Analysis")
+        
+        # Create tabs for different cohorts
+        cohort_display_tabs = st.tabs(["📊 Overview", "G1 Users", "G2 Users", "G3 Users", "🎯 CAB Users"])
+        
+        # Get all cohort analyses
+        g1_cohort = analyzer.get_cohort_analysis(g1_emails, "G1") if g1_emails else {}
+        g2_cohort = analyzer.get_cohort_analysis(g2_emails, "G2") if g2_emails else {}
+        g3_cohort = analyzer.get_cohort_analysis(g3_emails, "G3") if g3_emails else {}
+        cab_cohort = analyzer.get_cohort_analysis(cab_emails, "CAB") if cab_emails else {}
+        
+        # Overview Tab
+        with cohort_display_tabs[0]:
+            st.markdown("### 📊 Cohort Adoption Summary")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                g1_rate = g1_cohort.get('adoption_rate', 0) if g1_cohort else 0
+                st.metric("G1 Adoption", f"{g1_rate:.0f}%", 
+                         f"{g1_cohort.get('active_count', 0)}/{g1_cohort.get('total_cohort', 0)}")
+            with col2:
+                g2_rate = g2_cohort.get('adoption_rate', 0) if g2_cohort else 0
+                st.metric("G2 Adoption", f"{g2_rate:.0f}%",
+                         f"{g2_cohort.get('active_count', 0)}/{g2_cohort.get('total_cohort', 0)}")
+            with col3:
+                g3_rate = g3_cohort.get('adoption_rate', 0) if g3_cohort else 0
+                st.metric("G3 Adoption", f"{g3_rate:.0f}%",
+                         f"{g3_cohort.get('active_count', 0)}/{g3_cohort.get('total_cohort', 0)}")
+            with col4:
+                cab_rate = cab_cohort.get('adoption_rate', 0) if cab_cohort else 0
+                st.metric("CAB Adoption", f"{cab_rate:.0f}%",
+                         f"{cab_cohort.get('active_count', 0)}/{cab_cohort.get('total_cohort', 0)}")
+            
+            # Combined activity table
+            st.markdown("### 📈 All Active Users Across Cohorts")
+            all_active = []
+            for cohort_data, cohort_name in [(g1_cohort, 'G1'), (g2_cohort, 'G2'), (g3_cohort, 'G3'), (cab_cohort, 'CAB')]:
+                if cohort_data and cohort_data.get('active_users'):
+                    for user in cohort_data['active_users']:
+                        user_copy = user.copy()
+                        user_copy['cohort'] = cohort_name
+                        # Use CAB name lookup for CAB users
+                        if cohort_name == 'CAB' and user['email'].lower() in [e.lower() for e in cab_name_lookup.keys()]:
+                            for orig_email, name in cab_name_lookup.items():
+                                if user['email'].lower() == orig_email.lower():
+                                    user_copy['name'] = name
+                                    break
+                        all_active.append(user_copy)
+            
+            if all_active:
+                all_active_df = pd.DataFrame(all_active)
+                display_cols = ['cohort', 'name', 'email', 'trace_count', 'first_trace', 'last_trace']
+                available_cols = [c for c in display_cols if c in all_active_df.columns]
+                all_active_display = all_active_df[available_cols].copy()
+                all_active_display.columns = ['Cohort', 'Name', 'Email', 'Traces', 'First Use', 'Last Use'][:len(available_cols)]
+                if 'First Use' in all_active_display.columns:
+                    all_active_display['First Use'] = pd.to_datetime(all_active_display['First Use']).dt.strftime('%Y-%m-%d')
+                if 'Last Use' in all_active_display.columns:
+                    all_active_display['Last Use'] = pd.to_datetime(all_active_display['Last Use']).dt.strftime('%Y-%m-%d')
+                all_active_display = all_active_display.sort_values('Traces', ascending=False)
+                st.dataframe(all_active_display, use_container_width=True, hide_index=True)
+            else:
+                st.info("No active users found across any cohort")
+        
+        # Helper function to display cohort details
+        def display_cohort(cohort_data, cohort_name, name_lookup=None):
+            if not cohort_data:
+                st.info(f"No {cohort_name} cohort data configured")
+                return
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total G1 Users", cohort['total_cohort'])
+                st.metric(f"Total {cohort_name} Users", cohort_data.get('total_cohort', 0))
             with col2:
-                st.metric("Active Users", cohort['active_count'])
+                st.metric("Active Users", cohort_data.get('active_count', 0))
             with col3:
-                adoption = cohort.get('adoption_rate', 0)
+                adoption = cohort_data.get('adoption_rate', 0)
                 st.metric("Adoption Rate", f"{adoption:.1f}%")
             
-            # Active G1 users
-            if cohort['active_users']:
-                st.markdown("### ✅ G1 Users Who HAVE Used the Tool")
-                active_df = pd.DataFrame(cohort['active_users'])
-                active_display = active_df[['name', 'email', 'trace_count', 'first_trace', 'last_trace']].copy()
-                active_display.columns = ['Name', 'Email', 'Traces', 'First Use', 'Last Use']
-                active_display['First Use'] = pd.to_datetime(active_display['First Use']).dt.strftime('%Y-%m-%d')
-                active_display['Last Use'] = pd.to_datetime(active_display['Last Use']).dt.strftime('%Y-%m-%d')
+            # Active users
+            if cohort_data.get('active_users'):
+                st.markdown(f"### ✅ {cohort_name} Users Who HAVE Used the Tool")
+                active_df = pd.DataFrame(cohort_data['active_users'])
+                
+                # Apply name lookup if provided
+                if name_lookup:
+                    active_df['name'] = active_df['email'].apply(
+                        lambda e: name_lookup.get(e.lower(), name_lookup.get(e, e.split('@')[0]))
+                    )
+                
+                display_cols = ['name', 'email', 'trace_count', 'first_trace', 'last_trace']
+                available_cols = [c for c in display_cols if c in active_df.columns]
+                active_display = active_df[available_cols].copy()
+                active_display.columns = ['Name', 'Email', 'Traces', 'First Use', 'Last Use'][:len(available_cols)]
+                if 'First Use' in active_display.columns:
+                    active_display['First Use'] = pd.to_datetime(active_display['First Use']).dt.strftime('%Y-%m-%d')
+                if 'Last Use' in active_display.columns:
+                    active_display['Last Use'] = pd.to_datetime(active_display['Last Use']).dt.strftime('%Y-%m-%d')
                 st.dataframe(active_display, use_container_width=True, hide_index=True)
             
-            # Inactive G1 users
-            if cohort['non_users']:
-                st.markdown("### ❌ G1 Users Who Have NOT Used the Tool")
-                non_users_df = pd.DataFrame(cohort['non_users'])
+            # Inactive users
+            if cohort_data.get('non_users'):
+                st.markdown(f"### ❌ {cohort_name} Users Who Have NOT Used the Tool")
+                non_users_df = pd.DataFrame(cohort_data['non_users'])
+                
+                # Apply name lookup if provided
+                if name_lookup:
+                    non_users_df['name'] = non_users_df['email'].apply(
+                        lambda e: name_lookup.get(e.lower(), name_lookup.get(e, e.split('@')[0]))
+                    )
+                
                 non_users_display = non_users_df[['name', 'email']].copy()
                 non_users_display.columns = ['Name', 'Email']
                 st.dataframe(non_users_display, use_container_width=True, hide_index=True)
+        
+        # G1 Tab
+        with cohort_display_tabs[1]:
+            st.markdown("### 🔵 G1 User Cohort (Wave 1)")
+            display_cohort(g1_cohort, "G1")
+        
+        # G2 Tab
+        with cohort_display_tabs[2]:
+            st.markdown("### 🟢 G2 User Cohort (Wave 2)")
+            display_cohort(g2_cohort, "G2")
+        
+        # G3 Tab
+        with cohort_display_tabs[3]:
+            st.markdown("### 🟡 G3 User Cohort (Wave 3)")
+            display_cohort(g3_cohort, "G3")
+        
+        # CAB Tab
+        with cohort_display_tabs[4]:
+            st.markdown("### 🎯 Client Advisory Board (CAB)")
+            # Create lowercase lookup for CAB names
+            cab_name_lookup_lower = {k.lower(): v for k, v in cab_name_lookup.items()}
+            display_cohort(cab_cohort, "CAB", cab_name_lookup_lower)
         
         st.divider()
         
@@ -669,116 +1024,8 @@ tavonn.uresti@gwctx.org""",
                     "text/csv"
                 )
     
-    # TAB 4: Quality Analysis
+    # TAB 4: Performance Metrics
     with tab4:
-        st.header("Quality Analysis")
-        st.markdown("*Qualitative review of prompts and outputs*")
-        
-        quality_df = analyzer.get_quality_insights()
-        
-        if not quality_df.empty:
-            # Search functionality
-            st.subheader("🔎 Search Interactions")
-            search_query = st.text_input(
-                "Search in prompts and outputs",
-                placeholder="Enter keywords to search..."
-            )
-            
-            if search_query:
-                filtered_df = analyzer.search_interactions(search_query)
-                st.info(f"Found {len(filtered_df)} matching interactions")
-            else:
-                filtered_df = quality_df
-            
-            # Filters
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                status_filter = st.multiselect(
-                    "Status",
-                    options=filtered_df['status_code'].unique().tolist(),
-                    default=filtered_df['status_code'].unique().tolist()
-                )
-            
-            with col2:
-                if 'model' in filtered_df.columns:
-                    model_filter = st.multiselect(
-                        "Model",
-                        options=filtered_df['model'].unique().tolist(),
-                        default=filtered_df['model'].unique().tolist()
-                    )
-                else:
-                    model_filter = []
-            
-            with col3:
-                show_slow = st.checkbox("Show only slow responses", value=False)
-            
-            # Apply filters
-            display_df = filtered_df[filtered_df['status_code'].isin(status_filter)]
-            if model_filter and 'model' in display_df.columns:
-                display_df = display_df[display_df['model'].isin(model_filter)]
-            if show_slow and 'is_slow' in display_df.columns:
-                display_df = display_df[display_df['is_slow'] == True]
-            
-            # Sort options
-            sort_by = st.selectbox(
-                "Sort by",
-                ["start_time", "latency_s", "output_length", "token_count_total"]
-            )
-            display_df = display_df.sort_values(by=sort_by, ascending=False)
-            
-            # Display interactions
-            st.subheader(f"Showing {len(display_df)} Interactions")
-            
-            for idx, row in display_df.head(50).iterrows():
-                with st.expander(
-                    f"🔹 {row['name']} - {row['start_time'].strftime('%Y-%m-%d %H:%M:%S') if pd.notna(row['start_time']) else 'N/A'}",
-                    expanded=False
-                ):
-                    col1, col2 = st.columns([2, 1])
-                    
-                    with col1:
-                        st.markdown("**Input:**")
-                        st.text_area(
-                            "Input",
-                            value=str(row['input'])[:1000],
-                            height=100,
-                            key=f"input_{idx}",
-                            label_visibility="collapsed"
-                        )
-                        
-                        st.markdown("**Output:**")
-                        st.text_area(
-                            "Output",
-                            value=str(row['output'])[:1000],
-                            height=100,
-                            key=f"output_{idx}",
-                            label_visibility="collapsed"
-                        )
-                    
-                    with col2:
-                        st.markdown("**Metadata:**")
-                        st.json({
-                            "trace_id": str(row['trace_id'])[:20] + "...",
-                            "model": str(row['model']),
-                            "latency_s": f"{row['latency_s']:.2f}s" if pd.notna(row['latency_s']) else "N/A",
-                            "tokens": int(row['token_count_total']) if pd.notna(row['token_count_total']) else 0,
-                            "status": str(row['status_code'])
-                        })
-            
-            # Download option
-            st.divider()
-            csv = display_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "📥 Download Filtered Data as CSV",
-                csv,
-                "phoenix_quality_data.csv",
-                "text/csv",
-                key='download-csv'
-            )
-    
-    # TAB 5: Performance Metrics
-    with tab5:
         st.header("Performance Metrics")
         st.markdown("*Detailed performance analysis*")
         
@@ -889,66 +1136,176 @@ tavonn.uresti@gwctx.org""",
         else:
             st.success("✅ No errors detected in the analyzed period!")
     
-    # TAB 6: Log Explorer
-    with tab6:
+    # TAB 5: Log Explorer
+    with tab5:
         st.header("Log Explorer")
-        st.markdown("*Raw data exploration and export*")
-        
-        if not analyzer.df.empty:
-            st.subheader("Dataset Overview")
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Rows", len(analyzer.df))
-            with col2:
-                st.metric("Total Columns", len(analyzer.df.columns))
-            with col3:
-                memory_usage = analyzer.df.memory_usage(deep=True).sum() / 1024 / 1024
-                st.metric("Memory Usage", f"{memory_usage:.2f} MB")
-            
-            st.subheader("Column Information")
-            col_info = pd.DataFrame({
-                'Column': analyzer.df.columns,
-                'Type': analyzer.df.dtypes.values,
-                'Non-Null Count': [analyzer.df[col].notna().sum() for col in analyzer.df.columns],
-                'Null Count': [analyzer.df[col].isna().sum() for col in analyzer.df.columns]
-            })
-            st.dataframe(col_info, use_container_width=True)
-            
-            st.subheader("Data Preview")
-            num_rows = st.slider("Number of rows to display", 10, 100, 50)
-            st.dataframe(analyzer.df.head(num_rows), use_container_width=True)
-            
+        st.markdown("*Exportable trace list + latency bottleneck breakdown*")
+
+        if analyzer.traces_df.empty:
+            st.info("No trace data available to explore.")
+        else:
+            st.subheader("📄 All Traces (User, Query, Trace Latency)")
+            st.caption("This is designed to be your download-ready dataset of what users asked + how long the end-to-end trace took.")
+
+            only_query_traces = st.checkbox(
+                "Only include traces with a non-empty query (recommended for a 'questions' dataset)",
+                value=True
+            )
+
+            traces = analyzer.traces_df.copy()
+            # Keep the most useful columns for export / regression testing.
+            preferred_cols = [
+                'trace_start', 'trace_id', 'user_name', 'user_email',
+                'trace_type', 'query', 'category', 'location_preference',
+                'zip_code', 'trace_duration_s', 'status', 'total_tokens', 'tokens_estimated'
+            ]
+            cols = [c for c in preferred_cols if c in traces.columns]
+            traces = traces[cols].copy()
+
+            if 'query' in traces.columns:
+                traces['query'] = traces['query'].fillna('').astype(str)
+                if only_query_traces:
+                    traces = traces[traces['query'].str.strip().str.len() > 0]
+
+            if 'trace_start' in traces.columns:
+                traces = traces.sort_values('trace_start', ascending=False)
+
+            display = traces.copy()
+            if 'trace_start' in display.columns:
+                display['trace_start'] = pd.to_datetime(display['trace_start'], errors='coerce').dt.strftime('%Y-%m-%d %H:%M:%S')
+                display = display.rename(columns={'trace_start': 'timestamp'})
+
+            if 'trace_duration_s' in display.columns:
+                display['trace_duration_s'] = pd.to_numeric(display['trace_duration_s'], errors='coerce').round(3)
+                display = display.rename(columns={'trace_duration_s': 'trace_latency_s'})
+
+            if 'total_tokens' in display.columns:
+                display['total_tokens'] = (
+                    pd.to_numeric(display['total_tokens'], errors='coerce')
+                    .fillna(0)
+                    .astype(int)
+                )
+
+            rename_map = {
+                'user_name': 'user',
+                'user_email': 'email',
+            }
+            display = display.rename(columns=rename_map)
+
+            st.dataframe(display.fillna(''), use_container_width=True, hide_index=True)
+
+            csv_bytes = display.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📥 Download trace list (CSV)",
+                csv_bytes,
+                "phoenix_trace_list.csv",
+                "text/csv",
+                key="download-trace-list-csv"
+            )
+
             st.divider()
-            
-            # Export options
-            st.subheader("📥 Export Data")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                csv = analyzer.df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    "Download Full Dataset (CSV)",
-                    csv,
-                    "phoenix_full_data.csv",
-                    "text/csv",
-                    key='download-full-csv'
-                )
-            
-            with col2:
-                # JSON export
-                json_data = analyzer.df.to_json(orient='records')
-                st.download_button(
-                    "Download Full Dataset (JSON)",
-                    json_data,
-                    "phoenix_full_data.json",
-                    "application/json",
-                    key='download-json'
-                )
-    
-    # TAB 7: Advanced Analytics
-    with tab7:
+            st.subheader("📈 Trends & Correlation (Latency vs Tokens)")
+
+            # Build a numeric/time series-friendly view (separate from the display table formatting).
+            trend_df = traces.copy()
+            if 'trace_start' in trend_df.columns:
+                trend_df['trace_start'] = pd.to_datetime(trend_df['trace_start'], errors='coerce')
+            if 'trace_duration_s' in trend_df.columns:
+                trend_df['trace_duration_s'] = pd.to_numeric(trend_df['trace_duration_s'], errors='coerce')
+            if 'total_tokens' in trend_df.columns:
+                trend_df['total_tokens'] = pd.to_numeric(trend_df['total_tokens'], errors='coerce')
+
+            trend_df = trend_df.dropna(subset=[c for c in ['trace_start', 'trace_duration_s', 'total_tokens'] if c in trend_df.columns])
+
+            if trend_df.empty or 'trace_start' not in trend_df.columns:
+                st.info("Not enough data to plot trends.")
+            else:
+                trend_df = trend_df.sort_values('trace_start')
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    fig = px.line(
+                        trend_df,
+                        x='trace_start',
+                        y='trace_duration_s',
+                        title='Trace Latency Over Time',
+                        labels={'trace_start': 'Time', 'trace_duration_s': 'Latency (s)'}
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                with col2:
+                    if 'total_tokens' in trend_df.columns:
+                        fig = px.line(
+                            trend_df,
+                            x='trace_start',
+                            y='total_tokens',
+                            title='Tokens Over Time',
+                            labels={'trace_start': 'Time', 'total_tokens': 'Tokens'}
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No token data available for tokens-over-time chart.")
+
+                if 'total_tokens' in trend_df.columns:
+                    st.subheader("🔎 Latency vs Tokens (Correlation)")
+                    corr = trend_df['trace_duration_s'].corr(trend_df['total_tokens'])
+                    st.metric("Pearson correlation (latency vs tokens)", f"{corr:.3f}" if pd.notna(corr) else "N/A")
+
+                    fig = px.scatter(
+                        trend_df,
+                        x='total_tokens',
+                        y='trace_duration_s',
+                        title='Latency vs Tokens',
+                        labels={'total_tokens': 'Tokens', 'trace_duration_s': 'Latency (s)'},
+                        hover_data=[c for c in ['user_email', 'user_name', 'trace_type', 'query', 'trace_id'] if c in trend_df.columns]
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+            st.divider()
+            st.subheader("⏱️ Average Latency by Trace Step (Span Name)")
+            st.caption("Aggregated across the currently listed traces; use this to spot the biggest latency bottlenecks.")
+
+            if analyzer.df.empty or 'name' not in analyzer.df.columns:
+                st.info("Span-level data is not available for step breakdown.")
+            else:
+                spans_df = analyzer.df.copy()
+                if 'trace_id' in spans_df.columns and 'trace_id' in traces.columns:
+                    spans_df = spans_df[spans_df['trace_id'].isin(traces['trace_id'].dropna().unique())]
+
+                if 'latency_s' in spans_df.columns:
+                    spans_df['latency_s'] = pd.to_numeric(spans_df['latency_s'], errors='coerce')
+
+                spans_df = spans_df.dropna(subset=['name', 'latency_s'])
+
+                if spans_df.empty:
+                    st.info("No spans with latency were found for the selected traces.")
+                else:
+                    step_df = spans_df.groupby('name').agg(
+                        avg_latency_s=('latency_s', 'mean'),
+                        p95_latency_s=('latency_s', lambda x: x.quantile(0.95)),
+                        count_spans=('latency_s', 'count'),
+                        count_traces=('trace_id', pd.Series.nunique) if 'trace_id' in spans_df.columns else ('latency_s', 'count'),
+                    ).reset_index().rename(columns={'name': 'step'})
+
+                    step_df = step_df.sort_values('avg_latency_s', ascending=False)
+                    step_display = step_df.copy()
+                    for c in ['avg_latency_s', 'p95_latency_s']:
+                        if c in step_display.columns:
+                            step_display[c] = pd.to_numeric(step_display[c], errors='coerce').round(3)
+
+                    st.dataframe(step_display, use_container_width=True, hide_index=True)
+
+                    step_csv = step_display.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        "📥 Download step latency breakdown (CSV)",
+                        step_csv,
+                        "phoenix_span_step_latency.csv",
+                        "text/csv",
+                        key="download-step-latency-csv"
+                    )
+
+    # TAB 6: Advanced Analytics
+    with tab6:
         st.header("🧠 Advanced Analytics")
         st.markdown("*Deep insights into query patterns, resource effectiveness, and user behavior*")
         
