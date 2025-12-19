@@ -1123,6 +1123,12 @@ ritadecarlo675@gmail.com"""
         st.header("Performance Metrics")
         st.markdown("*Detailed performance analysis*")
         
+        user_facing_traces = (
+            analyzer.get_user_facing_traces()
+            if hasattr(analyzer, "get_user_facing_traces")
+            else pd.DataFrame()
+        )
+
         # Latency distribution
         st.subheader("Latency Distribution")
         latency_dist = analyzer.get_latency_distribution()
@@ -1141,6 +1147,10 @@ ritadecarlo675@gmail.com"""
             
             with col2:
                 st.markdown("**Latency Statistics**")
+                if 'population' in latency_dist:
+                    st.caption(
+                        f"Population: `{latency_dist['population']}` (prefers real user questions when available)"
+                    )
                 st.metric("Mean", f"{latency_dist['mean']:.2f}s")
                 st.metric("Median", f"{latency_dist['median']:.2f}s")
                 st.metric("Std Dev", f"{latency_dist['std']:.2f}s")
@@ -1162,6 +1172,335 @@ ritadecarlo675@gmail.com"""
                 title='Latency Percentiles'
             )
             st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        st.subheader("Latency Over Time (Percentiles)")
+        st.caption("Percentiles are usually the best way to track perceived speed (tail latency).")
+
+        # Time granularity (reuse the same mapping as Usage Analytics)
+        freq_map = {"Hourly": "H", "Daily": "D", "Weekly": "W"}
+        perf_freq = st.selectbox(
+            "Time Granularity",
+            list(freq_map.keys()),
+            index=1,
+            key="perf_latency_granularity",
+        )
+
+        ts_df = user_facing_traces.copy() if not user_facing_traces.empty else analyzer.traces_df.copy()
+        if ts_df is None or ts_df.empty:
+            st.info("No trace data available for latency trends.")
+        else:
+            if 'trace_start' in ts_df.columns:
+                ts_df['trace_start'] = pd.to_datetime(ts_df['trace_start'], errors='coerce', utc=True)
+            if 'trace_duration_s' in ts_df.columns:
+                ts_df['trace_duration_s'] = pd.to_numeric(ts_df['trace_duration_s'], errors='coerce')
+
+            ts_df = ts_df.dropna(subset=[c for c in ['trace_start', 'trace_duration_s'] if c in ts_df.columns])
+            ts_df = ts_df[ts_df['trace_duration_s'] > 0] if 'trace_duration_s' in ts_df.columns else ts_df
+
+            if ts_df.empty or 'trace_start' not in ts_df.columns or 'trace_duration_s' not in ts_df.columns:
+                st.info("Not enough data to plot latency percentiles over time.")
+            else:
+                freq_code = freq_map.get(perf_freq, "D")
+                grouped = ts_df.set_index('trace_start').resample(freq_code)['trace_duration_s']
+                latency_over_time = pd.DataFrame({
+                    'p50': grouped.quantile(0.50),
+                    'p90': grouped.quantile(0.90),
+                    'p95': grouped.quantile(0.95),
+                    'count': grouped.size(),
+                }).reset_index().rename(columns={'trace_start': 'timestamp'})
+                latency_over_time = latency_over_time.dropna(subset=['timestamp'])
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=latency_over_time['timestamp'], y=latency_over_time['p50'],
+                    name="p50", line=dict(color="#1f77b4")
+                ))
+                fig.add_trace(go.Scatter(
+                    x=latency_over_time['timestamp'], y=latency_over_time['p90'],
+                    name="p90", line=dict(color="#ff7f0e")
+                ))
+                fig.add_trace(go.Scatter(
+                    x=latency_over_time['timestamp'], y=latency_over_time['p95'],
+                    name="p95", line=dict(color="#d62728")
+                ))
+                fig.update_layout(
+                    height=420,
+                    xaxis_title="Time",
+                    yaxis_title="Latency (s)",
+                    title="Latency Percentiles Over Time",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.caption("Trace counts per bucket help interpret percentiles (low volume buckets can be noisy).")
+                fig_count = px.bar(
+                    latency_over_time,
+                    x="timestamp",
+                    y="count",
+                    title="Trace Volume Over Time",
+                    labels={"count": "Traces", "timestamp": "Time"},
+                )
+                st.plotly_chart(fig_count, use_container_width=True)
+
+        st.divider()
+        st.subheader("Tail Latency Volume (Thresholds)")
+        st.caption("Shows how often users experience very slow responses.")
+
+        thresholds = st.multiselect(
+            "Latency thresholds (seconds)",
+            options=[5, 10, 20, 30, 60, 120],
+            default=[10, 30, 60],
+            key="perf_tail_thresholds",
+        )
+        if ts_df is None or ts_df.empty or 'trace_start' not in ts_df.columns or 'trace_duration_s' not in ts_df.columns:
+            st.info("Not enough data to compute tail thresholds.")
+        else:
+            if not thresholds:
+                st.info("Select at least one threshold.")
+            else:
+                freq_code = freq_map.get(perf_freq, "D")
+                tail = ts_df[['trace_start', 'trace_duration_s']].copy()
+                tail = tail.set_index('trace_start')
+                out = pd.DataFrame(index=tail.resample(freq_code).size().index)
+                out.index.name = 'timestamp'
+                for t in thresholds:
+                    out[f'>{t}s'] = tail['trace_duration_s'].resample(freq_code).apply(lambda s, _t=t: int((s > _t).sum()))
+                out = out.reset_index()
+                long_df = out.melt(id_vars=['timestamp'], var_name='threshold', value_name='slow_traces')
+                fig = px.line(
+                    long_df,
+                    x='timestamp',
+                    y='slow_traces',
+                    color='threshold',
+                    title="Slow Trace Counts Over Time",
+                    labels={'slow_traces': 'Slow traces', 'timestamp': 'Time'},
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        st.subheader("Latency by Trace Type")
+        st.caption("Useful for spotting which workflow is slowest.")
+
+        by_type = user_facing_traces.copy() if not user_facing_traces.empty else analyzer.traces_df.copy()
+        if by_type is None or by_type.empty or 'trace_type' not in by_type.columns or 'trace_duration_s' not in by_type.columns:
+            st.info("Not enough data to plot latency by trace type.")
+        else:
+            by_type['trace_duration_s'] = pd.to_numeric(by_type['trace_duration_s'], errors='coerce')
+            by_type = by_type.dropna(subset=['trace_duration_s'])
+            by_type = by_type[by_type['trace_duration_s'] > 0]
+            fig = px.box(
+                by_type,
+                x='trace_type',
+                y='trace_duration_s',
+                points="outliers",
+                title="Latency Distribution by Trace Type",
+                labels={'trace_duration_s': 'Latency (s)', 'trace_type': 'Trace Type'},
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        st.subheader("Slowest Users (by p95)")
+        st.caption("Helps identify user segments that consistently experience slowness.")
+
+        by_user = user_facing_traces.copy() if not user_facing_traces.empty else analyzer.traces_df.copy()
+        if by_user is None or by_user.empty or 'user_email' not in by_user.columns or 'trace_duration_s' not in by_user.columns:
+            st.info("Not enough data to compute slowest users.")
+        else:
+            by_user['trace_duration_s'] = pd.to_numeric(by_user['trace_duration_s'], errors='coerce')
+            by_user = by_user.dropna(subset=['trace_duration_s'])
+            by_user = by_user[by_user['trace_duration_s'] > 0]
+
+            min_traces_per_user = st.slider(
+                "Minimum traces per user",
+                min_value=1,
+                max_value=50,
+                value=5,
+                step=1,
+                key="perf_min_traces_user",
+            )
+            user_stats = (
+                by_user.groupby('user_email', as_index=False)
+                .agg(
+                    traces=('trace_id', 'count') if 'trace_id' in by_user.columns else ('trace_duration_s', 'count'),
+                    avg_latency_s=('trace_duration_s', 'mean'),
+                    p95_latency_s=('trace_duration_s', lambda x: x.quantile(0.95)),
+                )
+            )
+            user_stats = user_stats[user_stats['traces'] >= min_traces_per_user]
+            user_stats = user_stats.sort_values('p95_latency_s', ascending=False).head(25)
+            st.dataframe(user_stats, use_container_width=True, hide_index=True)
+
+            fig = px.bar(
+                user_stats.sort_values('p95_latency_s', ascending=True),
+                x='p95_latency_s',
+                y='user_email',
+                orientation='h',
+                title="Top 25 Slowest Users (p95 latency)",
+                labels={'p95_latency_s': 'p95 latency (s)', 'user_email': 'User'},
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+        st.subheader("Top Slow Traces (Downloadable)")
+        st.caption("This is the best dataset to hand to engineering for concrete latency debugging.")
+
+        slow = user_facing_traces.copy() if not user_facing_traces.empty else analyzer.traces_df.copy()
+        if slow is None or slow.empty or 'trace_duration_s' not in slow.columns:
+            st.info("No trace duration data available.")
+        else:
+            slow['trace_duration_s'] = pd.to_numeric(slow['trace_duration_s'], errors='coerce')
+            slow = slow.dropna(subset=['trace_duration_s'])
+            slow = slow[slow['trace_duration_s'] > 0]
+
+            include_errors = st.checkbox(
+                "Include ERROR traces",
+                value=False,
+                key="perf_include_error_traces",
+            )
+            if not include_errors and 'status' in slow.columns:
+                slow = slow[slow['status'] != 'ERROR']
+
+            trace_types = sorted(slow['trace_type'].dropna().unique().tolist()) if 'trace_type' in slow.columns else []
+            selected_types = st.multiselect(
+                "Trace types",
+                options=trace_types,
+                default=trace_types,
+                key="perf_trace_types",
+            )
+            if selected_types and 'trace_type' in slow.columns:
+                slow = slow[slow['trace_type'].isin(selected_types)]
+
+            top_n = st.slider(
+                "How many slow traces to show",
+                min_value=10,
+                max_value=500,
+                value=100,
+                step=10,
+                key="perf_top_n_traces",
+            )
+            slow = slow.sort_values('trace_duration_s', ascending=False).head(top_n)
+
+            cols = [c for c in [
+                'trace_start', 'trace_id', 'user_email', 'user_name', 'trace_type',
+                'trace_duration_s', 'total_tokens', 'status', 'query', 'category', 'location_preference', 'zip_code'
+            ] if c in slow.columns]
+            slow_view = slow[cols].copy()
+            st.dataframe(slow_view, use_container_width=True, hide_index=True)
+
+            st.download_button(
+                "📥 Download slow traces (CSV)",
+                slow_view.to_csv(index=False).encode('utf-8'),
+                file_name="phoenix_slowest_traces.csv",
+                mime="text/csv",
+                key="download-slowest-traces",
+            )
+
+        st.divider()
+        st.subheader("Per-Trace Bottleneck Breakdown (Selected Trace)")
+        st.caption("Shows which span(s) dominate end-to-end latency for a single slow trace.")
+
+        if slow is None or slow.empty or 'trace_id' not in slow.columns:
+            st.info("Select a time range with trace IDs available.")
+        else:
+            trace_id_options = slow['trace_id'].dropna().astype(str).tolist()
+            selected_trace_id = st.selectbox(
+                "Select a trace_id to inspect",
+                options=trace_id_options,
+                index=0 if trace_id_options else None,
+                key="perf_selected_trace_id",
+            )
+
+            if not selected_trace_id:
+                st.info("No trace selected.")
+            else:
+                spans_df = analyzer.df.copy() if hasattr(analyzer, "df") else pd.DataFrame()
+                if spans_df is None or spans_df.empty or 'trace_id' not in spans_df.columns:
+                    st.info("No span-level data available to compute per-trace breakdown.")
+                else:
+                    spans = spans_df[spans_df['trace_id'].astype(str) == str(selected_trace_id)].copy()
+                    if spans.empty:
+                        st.info("No spans found for selected trace.")
+                    else:
+                        spans['start_time'] = pd.to_datetime(spans.get('start_time'), errors='coerce', utc=True)
+                        spans['end_time'] = pd.to_datetime(spans.get('end_time'), errors='coerce', utc=True)
+                        spans['latency_s'] = pd.to_numeric(spans.get('latency_s'), errors='coerce')
+                        spans = spans.dropna(subset=['latency_s'])
+                        spans = spans[spans['latency_s'] > 0]
+                        spans = spans.sort_values('start_time')
+
+                        trace_total = float(
+                            pd.to_numeric(
+                                analyzer.traces_df.loc[
+                                    analyzer.traces_df['trace_id'].astype(str) == str(selected_trace_id),
+                                    'trace_duration_s'
+                                ].iloc[0],
+                                errors='coerce'
+                            )
+                        ) if analyzer.traces_df is not None and not analyzer.traces_df.empty and 'trace_duration_s' in analyzer.traces_df.columns else None
+
+                        view = spans[['name', 'latency_s', 'start_time', 'end_time']].copy() if 'name' in spans.columns else spans[['latency_s', 'start_time', 'end_time']].copy()
+                        if trace_total and trace_total > 0:
+                            view['pct_of_trace'] = (view['latency_s'] / trace_total * 100).round(1)
+
+                        # Waterfall-ish bar: span durations in execution order
+                        fig = px.bar(
+                            view,
+                            x='latency_s',
+                            y=view.index.astype(str),
+                            orientation='h',
+                            title=f"Span durations for trace {selected_trace_id}",
+                            labels={'latency_s': 'Latency (s)', 'y': 'Span (execution order)'},
+                            hover_data=[c for c in ['name', 'pct_of_trace', 'start_time', 'end_time'] if c in view.columns],
+                        )
+                        fig.update_layout(height=520, yaxis=dict(showticklabels=False))
+                        st.plotly_chart(fig, use_container_width=True)
+                        st.dataframe(view.reset_index(drop=True), use_container_width=True, hide_index=True)
+
+        st.divider()
+        st.subheader("Where Time Goes (Aggregate Span Contribution)")
+        st.caption("Aggregates span latency across user-facing traces to highlight systemic bottlenecks.")
+
+        spans_df = analyzer.df.copy() if hasattr(analyzer, "df") else pd.DataFrame()
+        if spans_df is None or spans_df.empty or 'latency_s' not in spans_df.columns:
+            st.info("No span-level latency data available.")
+        else:
+            spans_df['latency_s'] = pd.to_numeric(spans_df['latency_s'], errors='coerce')
+            spans_df = spans_df.dropna(subset=['latency_s'])
+            spans_df = spans_df[spans_df['latency_s'] > 0]
+
+            # Restrict to user-facing trace IDs when available
+            if user_facing_traces is not None and not user_facing_traces.empty and 'trace_id' in user_facing_traces.columns and 'trace_id' in spans_df.columns:
+                uf_ids = set(user_facing_traces['trace_id'].dropna().astype(str))
+                spans_df = spans_df[spans_df['trace_id'].astype(str).isin(uf_ids)]
+
+            if spans_df.empty or 'name' not in spans_df.columns:
+                st.info("Not enough span data to compute aggregate contribution.")
+            else:
+                agg = (
+                    spans_df.groupby('name', as_index=False)
+                    .agg(
+                        spans=('span_id', 'count') if 'span_id' in spans_df.columns else ('latency_s', 'count'),
+                        avg_latency_s=('latency_s', 'mean'),
+                        p95_latency_s=('latency_s', lambda x: x.quantile(0.95)),
+                        total_span_time_s=('latency_s', 'sum'),
+                    )
+                )
+                total_time = float(agg['total_span_time_s'].sum()) if not agg.empty else 0
+                if total_time > 0:
+                    agg['contribution_pct'] = (agg['total_span_time_s'] / total_time * 100).round(2)
+                agg = agg.sort_values('total_span_time_s', ascending=False).head(30)
+                st.dataframe(agg, use_container_width=True, hide_index=True)
+
+                fig = px.bar(
+                    agg.sort_values('total_span_time_s', ascending=True),
+                    x='total_span_time_s',
+                    y='name',
+                    orientation='h',
+                    title="Top span groups by total time (sum of span latencies)",
+                    labels={'total_span_time_s': 'Total time (s)', 'name': 'Span name'},
+                )
+                st.plotly_chart(fig, use_container_width=True)
         
         # Model comparison
         st.subheader("Model Performance Comparison")
