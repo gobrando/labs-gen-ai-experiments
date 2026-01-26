@@ -180,12 +180,12 @@ class TraceAnalyzer:
             duration_ok = pd.Series(True, index=df.index)
 
         return df[query_ok & user_ok & duration_ok].copy()
-
+    
     def get_macro_statistics(self) -> Dict:
         """Calculate high-level statistics for leadership reporting"""
         if self.traces_df is None or self.traces_df.empty:
             return {}
-
+        
         user_facing = self.get_user_facing_traces()
         latency_source = user_facing if not user_facing.empty else self.traces_df
         durations = pd.to_numeric(latency_source.get('trace_duration_s'), errors='coerce')
@@ -255,7 +255,7 @@ class TraceAnalyzer:
         """Get latency distribution data"""
         if self.traces_df is None or self.traces_df.empty:
             return {}
-
+        
         user_facing = self.get_user_facing_traces()
         source = user_facing if not user_facing.empty else self.traces_df
 
@@ -2623,87 +2623,12 @@ class TraceAnalyzer:
         
         return insights
     
-    def analyze_output_quality(self) -> Dict:
+    def analyze_output_quality(self, return_full: bool = False) -> Dict:
         """
         Analyze the quality of AI responses/outputs for each trace.
         Scores responses on completeness, actionability, alignment, and structure.
         """
-        if self.df.empty:
-            return {}
-        
-        # Get output data from spans
-        output_analyses = []
-        
-        for trace_id in self.traces_df['trace_id'].unique():
-            trace_spans = self.df[self.df['trace_id'] == trace_id]
-            trace_row = self.traces_df[self.traces_df['trace_id'] == trace_id].iloc[0] if not self.traces_df[self.traces_df['trace_id'] == trace_id].empty else None
-            
-            if trace_row is None:
-                continue
-            
-            # Extract output content from spans
-            output_text = ""
-            resources_found = []
-            
-            for _, span in trace_spans.iterrows():
-                output_attr = span.get('output', '')
-                if isinstance(output_attr, str) and output_attr:
-                    # Try to parse as JSON
-                    try:
-                        output_data = json.loads(output_attr) if output_attr.startswith('{') or output_attr.startswith('[') else {}
-                        output_text += str(output_data)
-                        
-                        # Extract resources from output
-                        if isinstance(output_data, dict):
-                            # Look for resources in various formats
-                            for key in ['resources', 'referrals', 'results', 'recommendations', 'data']:
-                                if key in output_data:
-                                    items = output_data[key]
-                                    if isinstance(items, list):
-                                        for item in items:
-                                            if isinstance(item, dict):
-                                                resources_found.append(item)
-                    except:
-                        output_text += output_attr
-                
-                # Also check attributes for output content
-                attrs = span.get('attributes', {})
-                if isinstance(attrs, str):
-                    try:
-                        attrs = json.loads(attrs)
-                    except:
-                        attrs = {}
-                
-                if isinstance(attrs, dict):
-                    for key in ['output.value', 'llm.output_messages', 'output']:
-                        if key in attrs:
-                            val = attrs[key]
-                            if isinstance(val, str):
-                                output_text += val
-                            elif isinstance(val, list):
-                                for v in val:
-                                    if isinstance(v, dict):
-                                        output_text += str(v.get('message', {}).get('content', ''))
-            
-            # Analyze output quality
-            analysis = self._score_output_quality(
-                output_text=output_text,
-                resources=resources_found,
-                query=trace_row.get('query', ''),
-                query_category=trace_row.get('category', ''),
-                query_location=trace_row.get('location_preference', ''),
-                query_zip=trace_row.get('zip_code', ''),
-                trace_type=trace_row.get('trace_type', '')
-            )
-            
-            analysis['trace_id'] = trace_id
-            analysis['user'] = trace_row.get('user_email', 'Unknown')
-            analysis['query'] = trace_row.get('query', '')[:100]
-            analysis['trace_type'] = trace_row.get('trace_type', '')
-            analysis['timestamp'] = trace_row.get('trace_start', None)
-            
-            output_analyses.append(analysis)
-        
+        output_analyses = self._build_output_analyses()
         if not output_analyses:
             return {}
         
@@ -2743,9 +2668,158 @@ class TraceAnalyzer:
             'issue_counts': {k: len(v) for k, v in issues.items()},
             'issues': {k: v[:5] for k, v in issues.items()},  # Top 5 examples per issue
             'insights': insights,
-            'all_analyses': sorted(output_analyses, key=lambda x: x['quality_score'])[:50],  # Worst 50 for review
+            'all_analyses': (
+                sorted(output_analyses, key=lambda x: x['quality_score'])
+                if return_full
+                else sorted(output_analyses, key=lambda x: x['quality_score'])[:50]
+            ),
             'best_responses': sorted(output_analyses, key=lambda x: x['quality_score'], reverse=True)[:10]
         }
+
+    def _build_output_analyses(self) -> List[Dict]:
+        """Build per-trace output analysis records used for automated evals."""
+        if self.df.empty or self.traces_df is None or self.traces_df.empty:
+            return []
+
+        output_analyses = []
+        for trace_id in self.traces_df['trace_id'].unique():
+            trace_spans = self.df[self.df['trace_id'] == trace_id]
+            trace_rows = self.traces_df[self.traces_df['trace_id'] == trace_id]
+            if trace_rows.empty:
+                continue
+            trace_row = trace_rows.iloc[0]
+            
+            # Extract output content from spans
+            output_text = ""
+            resources_found = []
+            
+            for _, span in trace_spans.iterrows():
+                output_attr = span.get('output', '')
+                if isinstance(output_attr, str) and output_attr:
+                    try:
+                        output_data = (
+                            json.loads(output_attr)
+                            if output_attr.startswith('{') or output_attr.startswith('[')
+                            else {}
+                        )
+                        output_text += str(output_data)
+                        
+                        if isinstance(output_data, dict):
+                            for key in ['resources', 'referrals', 'results', 'recommendations', 'data']:
+                                if key in output_data:
+                                    items = output_data[key]
+                                    if isinstance(items, list):
+                                        for item in items:
+                                            if isinstance(item, dict):
+                                                resources_found.append(item)
+                    except Exception:
+                        output_text += output_attr
+                
+                attrs = span.get('attributes', {})
+                if isinstance(attrs, str):
+                    try:
+                        attrs = json.loads(attrs)
+                    except Exception:
+                        attrs = {}
+                
+                if isinstance(attrs, dict):
+                    for key in ['output.value', 'llm.output_messages', 'output']:
+                        if key in attrs:
+                            val = attrs[key]
+                            if isinstance(val, str):
+                                output_text += val
+                            elif isinstance(val, list):
+                                for v in val:
+                                    if isinstance(v, dict):
+                                        output_text += str(v.get('message', {}).get('content', ''))
+            
+            analysis = self._score_output_quality(
+                output_text=output_text,
+                resources=resources_found,
+                query=trace_row.get('query', ''),
+                query_category=trace_row.get('category', ''),
+                query_location=trace_row.get('location_preference', ''),
+                query_zip=trace_row.get('zip_code', ''),
+                trace_type=trace_row.get('trace_type', '')
+            )
+            
+            analysis.update(self._calculate_resource_detail_stats(resources_found))
+            analysis['trace_id'] = trace_id
+            analysis['user'] = trace_row.get('user_email', 'Unknown')
+            analysis['query'] = trace_row.get('query', '')[:200]
+            analysis['trace_type'] = trace_row.get('trace_type', '')
+            analysis['timestamp'] = trace_row.get('trace_start', None)
+            
+            output_analyses.append(analysis)
+        
+        return output_analyses
+
+    def _calculate_resource_detail_stats(self, resources: List[Dict]) -> Dict:
+        """Compute resource detail completeness as a proxy for hallucination risk."""
+        if not resources:
+            return {
+                'resource_detail_score': 0.0,
+                'resources_missing_location': 0,
+                'resources_missing_contact': 0,
+                'resources_with_location': 0,
+                'resources_with_contact': 0,
+                'structured_resource_count': 0,
+            }
+
+        detail_scores = []
+        missing_location = 0
+        missing_contact = 0
+        structured_count = 0
+
+        for res in resources:
+            if not isinstance(res, dict):
+                continue
+            structured_count += 1
+
+            name = res.get('name') or res.get('title')
+            has_name = bool(str(name).strip()) if name is not None else False
+
+            has_location = any(
+                bool(res.get(k))
+                for k in ['address', 'city', 'zip', 'zip_code', 'state']
+            )
+            has_contact = any(
+                bool(res.get(k))
+                for k in ['phone', 'website', 'url', 'email']
+            )
+
+            if not has_location:
+                missing_location += 1
+            if not has_contact:
+                missing_contact += 1
+
+            detail_scores.append((has_name + has_location + has_contact) / 3)
+
+        if structured_count == 0:
+            return {
+                'resource_detail_score': 0.0,
+                'resources_missing_location': 0,
+                'resources_missing_contact': 0,
+                'resources_with_location': 0,
+                'resources_with_contact': 0,
+                'structured_resource_count': 0,
+            }
+
+        return {
+            'resource_detail_score': float(np.mean(detail_scores) * 100),
+            'resources_missing_location': missing_location,
+            'resources_missing_contact': missing_contact,
+            'resources_with_location': structured_count - missing_location,
+            'resources_with_contact': structured_count - missing_contact,
+            'structured_resource_count': structured_count,
+        }
+
+    def get_output_quality_evals(self) -> pd.DataFrame:
+        """Return per-trace eval records for automated quality testing."""
+        output_analyses = self._build_output_analyses()
+        if not output_analyses:
+            return pd.DataFrame()
+        return pd.DataFrame(output_analyses)
     
     def _score_output_quality(self, output_text: str, resources: List, query: str, 
                               query_category: str, query_location: str, query_zip: str,
@@ -3210,3 +3284,625 @@ class TraceAnalyzer:
             insights.append(f"📋 Only {unique} unique resources being recommended - expand resource database")
         
         return insights
+
+    # =========================================================================
+    # COMPREHENSIVE EVAL SYSTEM
+    # =========================================================================
+
+    def get_comprehensive_evals(
+        self,
+        resource_inventory: Optional[List[Dict]] = None,
+        test_cases: Optional[List[Dict]] = None,
+    ) -> Dict:
+        """
+        Run comprehensive automated evaluations on all traces.
+        
+        Args:
+            resource_inventory: List of known resources for hallucination detection
+            test_cases: List of query → expected_resources pairs for gold standard testing
+        
+        Returns:
+            Comprehensive eval results with failure taxonomy, validation, coverage, etc.
+        """
+        # Build base output analyses
+        output_analyses = self._build_output_analyses()
+        if not output_analyses:
+            return {'error': 'No output data available for evaluation'}
+
+        # Index inventory for fast lookup
+        inventory_index = self._build_inventory_index(resource_inventory)
+        
+        # Run all eval dimensions
+        results = {
+            'trace_count': len(output_analyses),
+            'timestamp': datetime.now().isoformat(),
+        }
+        
+        # 1. Structured failure taxonomy
+        failure_taxonomy = self._run_failure_taxonomy(output_analyses, inventory_index)
+        results['failure_taxonomy'] = failure_taxonomy
+        
+        # 2. Resource validation (hallucination detection)
+        if inventory_index:
+            validation = self._run_resource_validation(output_analyses, inventory_index)
+            results['resource_validation'] = validation
+        else:
+            results['resource_validation'] = {'note': 'No inventory provided'}
+        
+        # 3. Coverage scoring
+        if inventory_index:
+            coverage = self._run_coverage_analysis(output_analyses, inventory_index)
+            results['coverage_analysis'] = coverage
+        else:
+            results['coverage_analysis'] = {'note': 'No inventory provided'}
+        
+        # 4. Gold standard test case scoring
+        if test_cases:
+            test_results = self._run_test_case_evaluation(test_cases, inventory_index)
+            results['test_case_results'] = test_results
+        else:
+            results['test_case_results'] = {'note': 'No test cases provided'}
+        
+        # 5. Executive summary
+        results['executive_summary'] = self._build_executive_summary(
+            output_analyses, failure_taxonomy, results.get('resource_validation', {})
+        )
+        
+        # 6. Per-trace detailed evals
+        results['trace_evals'] = output_analyses
+        
+        return results
+
+    def _build_inventory_index(
+        self, resource_inventory: Optional[List[Dict]]
+    ) -> Dict[str, Dict]:
+        """Build searchable index from resource inventory."""
+        if not resource_inventory:
+            return {}
+        
+        index = {}
+        for res in resource_inventory:
+            if not isinstance(res, dict):
+                continue
+            # Use name as primary key, normalized
+            name = res.get('name') or res.get('title') or res.get('organization_name') or ''
+            if not name:
+                continue
+            normalized = self._normalize_resource_name(name)
+            index[normalized] = res
+            
+            # Also index by alternate names if present
+            for alt_key in ['alternate_names', 'aliases', 'also_known_as']:
+                alts = res.get(alt_key, [])
+                if isinstance(alts, str):
+                    alts = [alts]
+                for alt in alts:
+                    if alt:
+                        index[self._normalize_resource_name(alt)] = res
+        
+        return index
+
+    def _normalize_resource_name(self, name: str) -> str:
+        """Normalize resource name for matching."""
+        if not name:
+            return ''
+        # Lowercase, remove punctuation, collapse whitespace
+        normalized = re.sub(r'[^\w\s]', '', name.lower())
+        normalized = re.sub(r'\s+', ' ', normalized).strip()
+        return normalized
+
+    def _run_failure_taxonomy(
+        self, output_analyses: List[Dict], inventory_index: Dict
+    ) -> Dict:
+        """
+        Classify each trace into structured failure categories.
+        
+        Failure Types:
+        - relevance: resource doesn't match query intent/category
+        - coverage: missed key resources for this query
+        - location: resource outside requested geography
+        - hallucination: resource not in known inventory
+        - actionability: missing phone/address/URL
+        - freshness: outdated information (if detectable)
+        - safety: inappropriate content
+        - generic: template/no-results response
+        """
+        failures = {
+            'relevance': [],
+            'coverage': [],
+            'location': [],
+            'hallucination': [],
+            'actionability': [],
+            'freshness': [],
+            'safety': [],
+            'generic': [],
+            'too_short': [],
+            'no_resources': [],
+        }
+        
+        failure_counts = {k: 0 for k in failures.keys()}
+        traces_with_failures = 0
+        
+        for analysis in output_analyses:
+            trace_failures = []
+            
+            # Relevance failure
+            if not analysis.get('category_aligned', True):
+                trace_failures.append('relevance')
+                failures['relevance'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'expected_category': analysis.get('query_category', ''),
+                    'reason': 'Category mismatch between query and response',
+                })
+            
+            # Location failure
+            if not analysis.get('location_aligned', True):
+                trace_failures.append('location')
+                failures['location'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'expected_location': analysis.get('query_location', ''),
+                    'reason': 'Location mismatch between query and response',
+                })
+            
+            # Hallucination (only if we have inventory)
+            if inventory_index:
+                resources = analysis.get('resources_found', [])
+                for res in resources:
+                    res_name = res.get('name') or res.get('title') or ''
+                    if res_name:
+                        normalized = self._normalize_resource_name(res_name)
+                        if normalized and normalized not in inventory_index:
+                            trace_failures.append('hallucination')
+                            failures['hallucination'].append({
+                                'trace_id': analysis.get('trace_id'),
+                                'resource_name': res_name,
+                                'reason': 'Resource not found in known inventory',
+                            })
+            
+            # Actionability failure
+            if analysis.get('resource_count', 0) > 0 and not analysis.get('has_actionable_info', True):
+                trace_failures.append('actionability')
+                failures['actionability'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'reason': 'Response has resources but no contact details',
+                })
+            
+            # Generic response
+            if analysis.get('is_generic', False):
+                trace_failures.append('generic')
+                failures['generic'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'reason': 'Generic/template response detected',
+                })
+            
+            # Too short
+            if analysis.get('too_short', False):
+                trace_failures.append('too_short')
+                failures['too_short'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'output_length': analysis.get('output_length', 0),
+                    'reason': 'Response too short',
+                })
+            
+            # No resources (for referral type)
+            if analysis.get('trace_type') == 'referrals' and analysis.get('resource_count', 0) == 0:
+                trace_failures.append('no_resources')
+                failures['no_resources'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'reason': 'Referral query returned no resources',
+                })
+            
+            # Safety check (basic keyword detection)
+            output_text = analysis.get('output_text', '').lower()
+            safety_keywords = ['kill', 'suicide', 'harm yourself', 'dangerous', 'illegal']
+            if any(kw in output_text for kw in safety_keywords):
+                trace_failures.append('safety')
+                failures['safety'].append({
+                    'trace_id': analysis.get('trace_id'),
+                    'query': analysis.get('query', ''),
+                    'reason': 'Potentially unsafe content detected',
+                })
+            
+            # Update analysis with failures
+            analysis['failure_types'] = list(set(trace_failures))
+            analysis['has_failures'] = len(trace_failures) > 0
+            
+            if trace_failures:
+                traces_with_failures += 1
+                for f in set(trace_failures):
+                    failure_counts[f] += 1
+        
+        return {
+            'failure_counts': failure_counts,
+            'traces_with_failures': traces_with_failures,
+            'traces_without_failures': len(output_analyses) - traces_with_failures,
+            'failure_rate': traces_with_failures / len(output_analyses) * 100 if output_analyses else 0,
+            'failures_by_type': {k: v[:20] for k, v in failures.items()},  # Top 20 examples each
+            'top_failure_types': sorted(
+                [(k, v) for k, v in failure_counts.items() if v > 0],
+                key=lambda x: x[1], reverse=True
+            ),
+        }
+
+    def _run_resource_validation(
+        self, output_analyses: List[Dict], inventory_index: Dict
+    ) -> Dict:
+        """Validate recommended resources against known inventory."""
+        total_resources = 0
+        matched_resources = 0
+        unmatched_resources = []
+        matched_list = []
+        
+        for analysis in output_analyses:
+            resources = analysis.get('resources_found', [])
+            for res in resources:
+                res_name = res.get('name') or res.get('title') or ''
+                if not res_name:
+                    continue
+                total_resources += 1
+                normalized = self._normalize_resource_name(res_name)
+                
+                if normalized in inventory_index:
+                    matched_resources += 1
+                    matched_list.append({
+                        'recommended': res_name,
+                        'matched_to': inventory_index[normalized].get('name', res_name),
+                        'trace_id': analysis.get('trace_id'),
+                    })
+                else:
+                    unmatched_resources.append({
+                        'name': res_name,
+                        'trace_id': analysis.get('trace_id'),
+                        'query': analysis.get('query', ''),
+                    })
+        
+        match_rate = matched_resources / total_resources * 100 if total_resources > 0 else 0
+        
+        return {
+            'total_resources_recommended': total_resources,
+            'matched_to_inventory': matched_resources,
+            'unmatched_count': len(unmatched_resources),
+            'match_rate': match_rate,
+            'hallucination_rate': 100 - match_rate,
+            'unmatched_resources': unmatched_resources[:50],  # Top 50
+            'matched_sample': matched_list[:20],
+            'inventory_size': len(inventory_index),
+            'health': 'good' if match_rate >= 90 else ('warning' if match_rate >= 70 else 'critical'),
+        }
+
+    def _run_coverage_analysis(
+        self, output_analyses: List[Dict], inventory_index: Dict
+    ) -> Dict:
+        """
+        Analyze coverage: are we recommending the right breadth of resources?
+        """
+        # Group inventory by category
+        inventory_by_category = defaultdict(list)
+        for name, res in inventory_index.items():
+            cat = res.get('category') or res.get('service_category') or res.get('type') or 'other'
+            if isinstance(cat, list):
+                for c in cat:
+                    inventory_by_category[c.lower()].append(name)
+            else:
+                inventory_by_category[cat.lower()].append(name)
+        
+        # Track which resources are being recommended
+        recommended_names = set()
+        recommendations_by_category = defaultdict(set)
+        
+        for analysis in output_analyses:
+            resources = analysis.get('resources_found', [])
+            query_category = (analysis.get('query_category') or '').lower()
+            
+            for res in resources:
+                res_name = res.get('name') or res.get('title') or ''
+                if res_name:
+                    normalized = self._normalize_resource_name(res_name)
+                    recommended_names.add(normalized)
+                    if query_category:
+                        recommendations_by_category[query_category].add(normalized)
+        
+        # Calculate coverage metrics
+        total_in_inventory = len(inventory_index)
+        total_recommended = len(recommended_names)
+        overall_coverage = total_recommended / total_in_inventory * 100 if total_in_inventory > 0 else 0
+        
+        # Per-category coverage
+        category_coverage = {}
+        for cat, resources in inventory_by_category.items():
+            cat_recommended = recommendations_by_category.get(cat, set())
+            cat_in_inventory = set(resources)
+            overlap = len(cat_recommended & cat_in_inventory)
+            category_coverage[cat] = {
+                'inventory_count': len(cat_in_inventory),
+                'recommended_count': len(cat_recommended),
+                'overlap': overlap,
+                'coverage_pct': overlap / len(cat_in_inventory) * 100 if cat_in_inventory else 0,
+            }
+        
+        # Find under-utilized resources
+        never_recommended = [
+            inventory_index[name].get('name', name)
+            for name in inventory_index.keys()
+            if name not in recommended_names
+        ][:50]
+        
+        return {
+            'total_in_inventory': total_in_inventory,
+            'total_ever_recommended': total_recommended,
+            'overall_coverage_pct': overall_coverage,
+            'category_coverage': dict(sorted(
+                category_coverage.items(),
+                key=lambda x: x[1]['coverage_pct']
+            )),
+            'under_utilized_resources': never_recommended,
+            'under_utilized_count': total_in_inventory - total_recommended,
+        }
+
+    def _run_test_case_evaluation(
+        self, test_cases: List[Dict], inventory_index: Dict
+    ) -> Dict:
+        """
+        Evaluate against gold standard test cases.
+        
+        Test case format:
+        {
+            'query': 'I need food assistance in Austin',
+            'expected_resources': ['Central Texas Food Bank', 'Caritas of Austin'],
+            'expected_category': 'food',
+            'expected_location': 'Austin',
+        }
+        """
+        results = []
+        passed = 0
+        failed = 0
+        
+        for tc in test_cases:
+            query = tc.get('query', '')
+            expected_resources = set(
+                self._normalize_resource_name(r)
+                for r in tc.get('expected_resources', [])
+            )
+            expected_category = (tc.get('expected_category') or '').lower()
+            expected_location = (tc.get('expected_location') or '').lower()
+            
+            # Find matching trace(s) for this query
+            matching_traces = [
+                a for a in self._build_output_analyses()
+                if query.lower() in (a.get('query') or '').lower()
+            ]
+            
+            if not matching_traces:
+                results.append({
+                    'query': query,
+                    'status': 'no_match',
+                    'reason': 'No trace found matching this test query',
+                })
+                continue
+            
+            # Take most recent matching trace
+            trace = matching_traces[0]
+            actual_resources = set(
+                self._normalize_resource_name(r.get('name') or r.get('title') or '')
+                for r in trace.get('resources_found', [])
+            )
+            
+            # Calculate metrics
+            resource_recall = len(actual_resources & expected_resources) / len(expected_resources) * 100 if expected_resources else 100
+            resource_precision = len(actual_resources & expected_resources) / len(actual_resources) * 100 if actual_resources else 0
+            
+            category_match = expected_category in (trace.get('query_category') or '').lower() if expected_category else True
+            location_match = expected_location in (trace.get('output_text') or '').lower() if expected_location else True
+            
+            # Determine pass/fail
+            is_pass = resource_recall >= 80 and category_match and location_match
+            
+            if is_pass:
+                passed += 1
+            else:
+                failed += 1
+            
+            results.append({
+                'query': query,
+                'status': 'pass' if is_pass else 'fail',
+                'resource_recall': resource_recall,
+                'resource_precision': resource_precision,
+                'expected_resources': list(expected_resources),
+                'actual_resources': list(actual_resources),
+                'missing_resources': list(expected_resources - actual_resources),
+                'extra_resources': list(actual_resources - expected_resources),
+                'category_match': category_match,
+                'location_match': location_match,
+            })
+        
+        return {
+            'total_test_cases': len(test_cases),
+            'passed': passed,
+            'failed': failed,
+            'pass_rate': passed / len(test_cases) * 100 if test_cases else 0,
+            'results': results,
+        }
+
+    def _build_executive_summary(
+        self,
+        output_analyses: List[Dict],
+        failure_taxonomy: Dict,
+        resource_validation: Dict,
+    ) -> Dict:
+        """Build executive summary for leadership reporting."""
+        total = len(output_analyses)
+        if total == 0:
+            return {'error': 'No data for executive summary'}
+        
+        # Overall quality score (weighted composite)
+        quality_scores = [a.get('quality_score', 0) for a in output_analyses]
+        avg_quality = np.mean(quality_scores) if quality_scores else 0
+        
+        # Pass rate (traces with no critical failures)
+        critical_failures = {'hallucination', 'safety', 'no_resources'}
+        traces_with_critical = sum(
+            1 for a in output_analyses
+            if any(f in a.get('failure_types', []) for f in critical_failures)
+        )
+        pass_rate = (total - traces_with_critical) / total * 100
+        
+        # Failure summary
+        failure_counts = failure_taxonomy.get('failure_counts', {})
+        top_failures = failure_taxonomy.get('top_failure_types', [])[:3]
+        
+        # Resource health
+        match_rate = resource_validation.get('match_rate', 0)
+        hallucination_rate = resource_validation.get('hallucination_rate', 0)
+        
+        # Actionability
+        actionable_rate = sum(
+            1 for a in output_analyses if a.get('has_actionable_info', False)
+        ) / total * 100 if total else 0
+        
+        # Compute overall health score (0-100)
+        health_score = (
+            avg_quality * 0.3 +
+            pass_rate * 0.3 +
+            match_rate * 0.2 +
+            actionable_rate * 0.2
+        )
+        
+        health_status = 'excellent' if health_score >= 85 else (
+            'good' if health_score >= 70 else (
+                'needs_attention' if health_score >= 50 else 'critical'
+            )
+        )
+        
+        return {
+            'health_score': round(health_score, 1),
+            'health_status': health_status,
+            'total_traces_evaluated': total,
+            'avg_quality_score': round(avg_quality, 1),
+            'pass_rate': round(pass_rate, 1),
+            'match_rate': round(match_rate, 1),
+            'hallucination_rate': round(hallucination_rate, 1),
+            'actionable_rate': round(actionable_rate, 1),
+            'top_failure_types': top_failures,
+            'traces_with_any_failure': failure_taxonomy.get('traces_with_failures', 0),
+            'failure_rate': round(failure_taxonomy.get('failure_rate', 0), 1),
+            'recommendations': self._generate_exec_recommendations(
+                health_score, top_failures, match_rate, actionable_rate
+            ),
+        }
+
+    def _generate_exec_recommendations(
+        self,
+        health_score: float,
+        top_failures: List,
+        match_rate: float,
+        actionable_rate: float,
+    ) -> List[str]:
+        """Generate actionable recommendations for leadership."""
+        recs = []
+        
+        if health_score < 70:
+            recs.append("🚨 Overall quality needs immediate attention")
+        
+        for failure_type, count in top_failures:
+            if failure_type == 'hallucination' and count > 0:
+                recs.append(f"⚠️ {count} potential hallucinations detected - verify resource inventory")
+            elif failure_type == 'location' and count > 5:
+                recs.append(f"📍 {count} location mismatches - improve geographic targeting")
+            elif failure_type == 'relevance' and count > 5:
+                recs.append(f"🎯 {count} relevance issues - refine category matching")
+            elif failure_type == 'no_resources' and count > 5:
+                recs.append(f"📋 {count} queries returned no resources - expand database")
+            elif failure_type == 'generic' and count > 5:
+                recs.append(f"📝 {count} generic responses - improve prompt specificity")
+        
+        if match_rate < 80:
+            recs.append(f"🔍 Only {match_rate:.0f}% of resources match inventory - investigate data gaps")
+        
+        if actionable_rate < 70:
+            recs.append(f"📞 Only {actionable_rate:.0f}% include contact info - enhance resource data")
+        
+        if not recs:
+            recs.append("✅ No critical issues detected - continue monitoring")
+        
+        return recs
+
+    def run_consistency_analysis(
+        self, test_queries: List[str], num_runs: int = 3
+    ) -> Dict:
+        """
+        Analyze consistency: do similar queries produce similar results?
+        Note: This requires access to the actual LLM to re-run queries.
+        For now, we analyze variance in existing traces with similar queries.
+        """
+        # Group traces by similar queries
+        query_groups = defaultdict(list)
+        
+        output_analyses = self._build_output_analyses()
+        for analysis in output_analyses:
+            query = analysis.get('query', '')
+            if not query:
+                continue
+            # Simple grouping by first few words
+            key = ' '.join(query.lower().split()[:5])
+            query_groups[key].append(analysis)
+        
+        consistency_results = []
+        
+        for key, analyses in query_groups.items():
+            if len(analyses) < 2:
+                continue
+            
+            # Analyze variance in responses
+            quality_scores = [a.get('quality_score', 0) for a in analyses]
+            resource_counts = [a.get('resource_count', 0) for a in analyses]
+            
+            # Collect all resources across runs
+            all_resources = []
+            for a in analyses:
+                resources = a.get('resources_found', [])
+                names = [
+                    self._normalize_resource_name(r.get('name') or r.get('title') or '')
+                    for r in resources
+                ]
+                all_resources.append(set(names))
+            
+            # Calculate Jaccard similarity between resource sets
+            if len(all_resources) >= 2:
+                similarities = []
+                for i in range(len(all_resources)):
+                    for j in range(i + 1, len(all_resources)):
+                        a, b = all_resources[i], all_resources[j]
+                        if a or b:
+                            jaccard = len(a & b) / len(a | b) if (a | b) else 1.0
+                            similarities.append(jaccard)
+                avg_similarity = np.mean(similarities) if similarities else 1.0
+            else:
+                avg_similarity = 1.0
+            
+            consistency_results.append({
+                'query_group': key,
+                'num_traces': len(analyses),
+                'quality_variance': np.var(quality_scores) if len(quality_scores) > 1 else 0,
+                'resource_count_variance': np.var(resource_counts) if len(resource_counts) > 1 else 0,
+                'resource_similarity': avg_similarity,
+                'is_consistent': avg_similarity >= 0.7 and np.var(quality_scores) < 100,
+            })
+        
+        # Sort by inconsistency
+        consistency_results.sort(key=lambda x: x['resource_similarity'])
+        
+        inconsistent_count = sum(1 for r in consistency_results if not r['is_consistent'])
+        
+        return {
+            'groups_analyzed': len(consistency_results),
+            'inconsistent_groups': inconsistent_count,
+            'consistency_rate': (len(consistency_results) - inconsistent_count) / len(consistency_results) * 100 if consistency_results else 100,
+            'most_inconsistent': consistency_results[:10],
+            'most_consistent': consistency_results[-10:] if len(consistency_results) >= 10 else [],
+        }

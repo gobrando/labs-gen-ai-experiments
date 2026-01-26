@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 from datetime import datetime, timedelta, timezone
+from typing import Dict
 from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
@@ -230,15 +231,36 @@ natalie.watkins@gwctx.org
 reva.conley@gwctx.org
 samirrah.cooke@gwctx.org
 zwany.batista@gwctx.org"""
+
+    KEYSTONE_EMAILS_DEFAULT = """cgarr@yourgoodwill.org
+bjeckson@yourgoodwill.org
+cmitchell@yourgoodwill.org
+tgilbert@yourgoodwill.org
+gcook@yourgoodwill.org
+fjones@yourgoodwill.org
+abond@yourgoodwill.org
+pmedori@yourgoodwill.org
+aelias@yourgoodwill.org
+sponcelet@yourgoodwill.org
+mkensinger@yourgoodwill.org
+klee@yourgoodwill.org
+mmercer@yourgoodwill.org
+lmcalsose@yourgoodwill.org
+rkraynek@yourgoodwill.org
+bforschner@yourgoodwill.org
+flopez@yourgoodwill.org
+etrinkl@yourgoodwill.org
+kmchugh@yourgoodwill.org"""
     
     # Main dashboard tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📈 Executive Summary",
         "📊 Usage Analytics",
         "📋 Usage Report",
         "⚡ Performance Metrics",
         "🔎 Log Explorer",
-        "🧠 Advanced Analytics"
+        "🧠 Advanced Analytics",
+        "✅ Evals"
     ])
     
     # TAB 1: Executive Summary
@@ -561,6 +583,7 @@ zwany.batista@gwctx.org"""
             "2025-12-09 14:00",
             "2025-12-10 14:00",
             "2025-12-11 14:00",
+            "2025-12-18 14:00",
 
             # November 2025 - CAB Session 1
             "2025-11-17 12:30", "2025-11-17 13:20",
@@ -572,6 +595,21 @@ zwany.batista@gwctx.org"""
             "2025-12-15 13:00",
             "2025-12-16 14:00", "2025-12-16 15:00",
             "2025-12-17 14:00",
+            "2025-12-22 13:00",
+
+            # January 2026 - Training meeting (provided as 3pm CST => 4pm ET)
+            "2026-01-06 16:00",
+
+            # January 2026 - NAB Session 5
+            "2026-01-20 09:00",
+            "2026-01-20 14:00", "2026-01-20 15:00",
+            "2026-01-21 13:00", "2026-01-21 14:00",
+            "2026-01-22 14:00", "2026-01-22 15:00",
+
+            # January 2026 - CAB Session 3
+            "2026-01-27 14:00", "2026-01-27 15:00",
+            "2026-01-28 14:00",
+            "2026-01-29 13:00",
         ]
 
         with st.expander("📅 Meeting window schedule (editable)", expanded=False):
@@ -667,8 +705,8 @@ zwany.batista@gwctx.org"""
             )
             st.plotly_chart(fig_org, use_container_width=True)
 
-            # Organic pilot cohort usage (G1/G2/G3)
-            st.subheader("🌿 Organic Pilot Usage (G1/G2/G3)")
+            # Organic pilot cohort usage (G1/G2/G3/Keystone)
+            st.subheader("🌿 Organic Pilot Usage (G1/G2/G3/Keystone)")
             st.caption(
                 "Tracks organic usage for the pilot cohorts only (after excluding meeting windows)."
             )
@@ -695,6 +733,12 @@ zwany.batista@gwctx.org"""
                         height=140,
                         key="g3_org_emails",
                     )
+                    keystone_org_text = st.text_area(
+                        "Keystone emails (one per line)",
+                        value=KEYSTONE_EMAILS_DEFAULT,
+                        height=140,
+                        key="keystone_org_emails",
+                    )
 
                 def _parse_emails(text: str) -> set:
                     return {
@@ -706,6 +750,7 @@ zwany.batista@gwctx.org"""
                 g1_set = _parse_emails(g1_org_text)
                 g2_set = _parse_emails(g2_org_text)
                 g3_set = _parse_emails(g3_org_text)
+                keystone_set = _parse_emails(keystone_org_text)
 
                 org_emails = (
                     organic_df['user_email'].astype(str).str.lower().str.strip()
@@ -714,9 +759,10 @@ zwany.batista@gwctx.org"""
                 g1_series = organic_df.loc[org_emails.isin(g1_set)].set_index('_trace_start_utc').resample(ts_freq).size().rename('G1')
                 g2_series = organic_df.loc[org_emails.isin(g2_set)].set_index('_trace_start_utc').resample(ts_freq).size().rename('G2')
                 g3_series = organic_df.loc[org_emails.isin(g3_set)].set_index('_trace_start_utc').resample(ts_freq).size().rename('G3')
+                keystone_series = organic_df.loc[org_emails.isin(keystone_set)].set_index('_trace_start_utc').resample(ts_freq).size().rename('Keystone')
 
                 cohort_ts = (
-                    pd.concat([g1_series, g2_series, g3_series], axis=1)
+                    pd.concat([g1_series, g2_series, g3_series, keystone_series], axis=1)
                     .fillna(0)
                     .astype(int)
                     .reset_index()
@@ -736,8 +782,12 @@ zwany.batista@gwctx.org"""
                     x=cohort_ts['timestamp'], y=cohort_ts['G3'],
                     name="G3 Organic", line=dict(color="#ff7f0e")
                 ))
+                fig_coh.add_trace(go.Scatter(
+                    x=cohort_ts['timestamp'], y=cohort_ts['Keystone'],
+                    name="Keystone Organic", line=dict(color="#9467bd")
+                ))
                 fig_coh.update_layout(
-                    title="Organic Usage Over Time — Pilot Cohorts (G1/G2/G3)",
+                    title="Organic Usage Over Time — Pilot Cohorts (G1/G2/G3/Keystone)",
                     height=420,
                     xaxis_title="Time",
                     yaxis_title="Trace Count",
@@ -755,6 +805,7 @@ zwany.batista@gwctx.org"""
         g1_emails_default = G1_EMAILS_DEFAULT
         g2_emails_default = G2_EMAILS_DEFAULT
         g3_emails_default = G3_EMAILS_DEFAULT
+        keystone_emails_default = KEYSTONE_EMAILS_DEFAULT
 
         # CAB (Client Advisory Board) users
         cab_emails_default = """jswann40@yahoo.com
@@ -765,6 +816,29 @@ mtmaguire@gmail.com
 mleake86@gmail.com
 chanelunknown1@gmail.com
 ritadecarlo675@gmail.com"""
+
+        # Keystone name lookup (for display purposes)
+        keystone_name_lookup = {
+            'cgarr@yourgoodwill.org': 'Cheryl Garr',
+            'bjeckson@yourgoodwill.org': 'Becky Jackson',
+            'cmitchell@yourgoodwill.org': 'Chris Mitchell',
+            'tgilbert@yourgoodwill.org': 'Taylor Gilbert',
+            'gcook@yourgoodwill.org': 'Griffin Cook',
+            'fjones@yourgoodwill.org': 'Faith Jones',
+            'abond@yourgoodwill.org': 'Adele Bond',
+            'pmedori@yourgoodwill.org': 'Pauline Medori',
+            'aelias@yourgoodwill.org': 'Alyssa Elias',
+            'sponcelet@yourgoodwill.org': 'Stephane Poncelet',
+            'mkensinger@yourgoodwill.org': 'Michele Kensinger',
+            'klee@yourgoodwill.org': 'Kristine Lee',
+            'mmercer@yourgoodwill.org': 'Madeline Mercer',
+            'lmcalsose@yourgoodwill.org': 'Lucy McAlouse',
+            'rkraynek@yourgoodwill.org': 'Rebekah Kraynek',
+            'bforschner@yourgoodwill.org': 'Brent Forschner',
+            'flopez@yourgoodwill.org': 'Flor Lopez',
+            'etrinkl@yourgoodwill.org': 'Elaine Trinkl',
+            'kmchugh@yourgoodwill.org': 'Kelly McHugh',
+        }
 
         # CAB name lookup (for display purposes)
         cab_name_lookup = {
@@ -780,7 +854,9 @@ ritadecarlo675@gmail.com"""
         
         # Report configuration
         with st.expander("⚙️ Cohort Configuration", expanded=False):
-            cohort_tab1, cohort_tab2, cohort_tab3, cohort_tab4 = st.tabs(["G1 Users", "G2 Users", "G3 Users", "CAB Users"])
+            cohort_tab1, cohort_tab2, cohort_tab3, cohort_tab4, cohort_tab5 = st.tabs(
+                ["G1 Users", "G2 Users", "G3 Users", "Keystone Users", "CAB Users"]
+            )
             
             with cohort_tab1:
                 g1_emails_text = st.text_area(
@@ -807,6 +883,14 @@ ritadecarlo675@gmail.com"""
                 )
             
             with cohort_tab4:
+                keystone_emails_text = st.text_area(
+                    "Keystone User Emails (one per line)",
+                    value=keystone_emails_default,
+                    height=200,
+                    key="keystone_config"
+                )
+
+            with cohort_tab5:
                 cab_emails_text = st.text_area(
                     "CAB User Emails (one per line)",
                     value=cab_emails_default,
@@ -818,6 +902,7 @@ ritadecarlo675@gmail.com"""
         g1_emails = [e.strip() for e in g1_emails_text.split('\n') if e.strip()]
         g2_emails = [e.strip() for e in g2_emails_text.split('\n') if e.strip()]
         g3_emails = [e.strip() for e in g3_emails_text.split('\n') if e.strip()]
+        keystone_emails = [e.strip() for e in keystone_emails_text.split('\n') if e.strip()]
         cab_emails = [e.strip() for e in cab_emails_text.split('\n') if e.strip()]
         
         # Generate comprehensive report
@@ -879,19 +964,22 @@ ritadecarlo675@gmail.com"""
         st.subheader("👥 User Cohort Analysis")
         
         # Create tabs for different cohorts
-        cohort_display_tabs = st.tabs(["📊 Overview", "G1 Users", "G2 Users", "G3 Users", "🎯 CAB Users"])
+        cohort_display_tabs = st.tabs(
+            ["📊 Overview", "G1 Users", "G2 Users", "G3 Users", "🏛️ Keystone Users", "🎯 CAB Users"]
+        )
         
         # Get all cohort analyses
         g1_cohort = analyzer.get_cohort_analysis(g1_emails, "G1") if g1_emails else {}
         g2_cohort = analyzer.get_cohort_analysis(g2_emails, "G2") if g2_emails else {}
         g3_cohort = analyzer.get_cohort_analysis(g3_emails, "G3") if g3_emails else {}
+        keystone_cohort = analyzer.get_cohort_analysis(keystone_emails, "Keystone") if keystone_emails else {}
         cab_cohort = analyzer.get_cohort_analysis(cab_emails, "CAB") if cab_emails else {}
         
         # Overview Tab
         with cohort_display_tabs[0]:
             st.markdown("### 📊 Cohort Adoption Summary")
             
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 g1_rate = g1_cohort.get('adoption_rate', 0) if g1_cohort else 0
                 st.metric("G1 Adoption", f"{g1_rate:.0f}%", 
@@ -905,6 +993,10 @@ ritadecarlo675@gmail.com"""
                 st.metric("G3 Adoption", f"{g3_rate:.0f}%",
                          f"{g3_cohort.get('active_count', 0)}/{g3_cohort.get('total_cohort', 0)}")
             with col4:
+                keystone_rate = keystone_cohort.get('adoption_rate', 0) if keystone_cohort else 0
+                st.metric("Keystone Adoption", f"{keystone_rate:.0f}%",
+                         f"{keystone_cohort.get('active_count', 0)}/{keystone_cohort.get('total_cohort', 0)}")
+            with col5:
                 cab_rate = cab_cohort.get('adoption_rate', 0) if cab_cohort else 0
                 st.metric("CAB Adoption", f"{cab_rate:.0f}%",
                          f"{cab_cohort.get('active_count', 0)}/{cab_cohort.get('total_cohort', 0)}")
@@ -912,14 +1004,24 @@ ritadecarlo675@gmail.com"""
             # Combined activity table
             st.markdown("### 📈 All Active Users Across Cohorts")
             all_active = []
-            for cohort_data, cohort_name in [(g1_cohort, 'G1'), (g2_cohort, 'G2'), (g3_cohort, 'G3'), (cab_cohort, 'CAB')]:
+            for cohort_data, cohort_name in [
+                (g1_cohort, 'G1'),
+                (g2_cohort, 'G2'),
+                (g3_cohort, 'G3'),
+                (keystone_cohort, 'Keystone'),
+                (cab_cohort, 'CAB'),
+            ]:
                 if cohort_data and cohort_data.get('active_users'):
                     for user in cohort_data['active_users']:
                         user_copy = user.copy()
                         user_copy['cohort'] = cohort_name
-                        # Use CAB name lookup for CAB users
-                        if cohort_name == 'CAB' and user['email'].lower() in [e.lower() for e in cab_name_lookup.keys()]:
+                        if cohort_name == 'CAB':
                             for orig_email, name in cab_name_lookup.items():
+                                if user['email'].lower() == orig_email.lower():
+                                    user_copy['name'] = name
+                                    break
+                        if cohort_name == 'Keystone':
+                            for orig_email, name in keystone_name_lookup.items():
                                 if user['email'].lower() == orig_email.lower():
                                     user_copy['name'] = name
                                     break
@@ -1006,8 +1108,14 @@ ritadecarlo675@gmail.com"""
             st.markdown("### 🟡 G3 User Cohort (Wave 3)")
             display_cohort(g3_cohort, "G3")
         
-        # CAB Tab
+        # Keystone Tab
         with cohort_display_tabs[4]:
+            st.markdown("### 🏛️ Keystone User Cohort")
+            keystone_name_lookup_lower = {k.lower(): v for k, v in keystone_name_lookup.items()}
+            display_cohort(keystone_cohort, "Keystone", keystone_name_lookup_lower)
+
+        # CAB Tab
+        with cohort_display_tabs[5]:
             st.markdown("### 🎯 Client Advisory Board (CAB)")
             # Create lowercase lookup for CAB names
             cab_name_lookup_lower = {k.lower(): v for k, v in cab_name_lookup.items()}
@@ -2667,6 +2775,686 @@ ritadecarlo675@gmail.com"""
                 st.dataframe(res_display, use_container_width=True, hide_index=True)
         else:
             st.info("No resource recommendation data available")
+
+    # TAB 7: Evals
+    with tab7:
+        st.header("✅ Comprehensive AI Output Evaluation")
+        st.markdown(
+            "*Automated quality checks, hallucination detection, and failure taxonomy for confident leadership reporting.*"
+        )
+
+        # Create sub-tabs for different eval sections
+        eval_tabs = st.tabs([
+            "📊 Executive Summary",
+            "🚨 Failure Taxonomy",
+            "🔍 Resource Validation",
+            "📈 Coverage Analysis",
+            "🧪 Test Cases",
+            "🔄 Consistency",
+            "📋 Detailed Flags",
+        ])
+
+        # =====================================================================
+        # RESOURCE INVENTORY CONFIGURATION
+        # =====================================================================
+        with st.sidebar.expander("📦 Resource Inventory (S3)", expanded=False):
+            st.markdown("**Connect to your S3 resource inventory for hallucination detection.**")
+            s3_bucket = st.text_input(
+                "S3 Bucket Name",
+                value=os.getenv('RESOURCE_S3_BUCKET', ''),
+                help="e.g., goodwill-resources"
+            )
+            s3_key = st.text_input(
+                "S3 Object Key",
+                value=os.getenv('RESOURCE_S3_KEY', 'resources.json'),
+                help="Path to JSON file in bucket"
+            )
+            aws_region = st.text_input(
+                "AWS Region",
+                value=os.getenv('AWS_REGION', 'us-east-1'),
+            )
+            use_inventory = st.checkbox("Enable inventory validation", value=False)
+
+            # For now, allow CSV upload as alternative
+            st.markdown("**Or upload inventory CSV/JSON:**")
+            inventory_file = st.file_uploader(
+                "Upload resource inventory",
+                type=['csv', 'json'],
+                key='inventory_upload'
+            )
+
+        # Load resource inventory
+        resource_inventory = []
+        if inventory_file is not None:
+            try:
+                if inventory_file.name.endswith('.json'):
+                    import json as json_lib
+                    resource_inventory = json_lib.load(inventory_file)
+                    if isinstance(resource_inventory, dict):
+                        # Handle nested structures
+                        for key in ['resources', 'data', 'items']:
+                            if key in resource_inventory:
+                                resource_inventory = resource_inventory[key]
+                                break
+                else:
+                    inv_df = pd.read_csv(inventory_file)
+                    resource_inventory = inv_df.to_dict('records')
+                st.sidebar.success(f"✅ Loaded {len(resource_inventory)} resources from file")
+            except Exception as e:
+                st.sidebar.error(f"Error loading inventory: {e}")
+        elif use_inventory and s3_bucket:
+            try:
+                import boto3
+                s3_client = boto3.client('s3', region_name=aws_region)
+                response = s3_client.get_object(Bucket=s3_bucket, Key=s3_key)
+                import json as json_lib
+                resource_inventory = json_lib.loads(response['Body'].read().decode('utf-8'))
+                if isinstance(resource_inventory, dict):
+                    for key in ['resources', 'data', 'items']:
+                        if key in resource_inventory:
+                            resource_inventory = resource_inventory[key]
+                            break
+                st.sidebar.success(f"✅ Loaded {len(resource_inventory)} resources from S3")
+            except Exception as e:
+                st.sidebar.warning(f"Could not load from S3: {e}")
+
+        # Test case upload
+        with st.sidebar.expander("🧪 Gold Standard Test Cases", expanded=False):
+            st.markdown("Upload test cases (JSON format):")
+            st.markdown("""
+            ```json
+            [
+              {
+                "query": "food assistance in Austin",
+                "expected_resources": ["Central Texas Food Bank"],
+                "expected_category": "food",
+                "expected_location": "Austin"
+              }
+            ]
+            ```
+            """)
+            test_case_file = st.file_uploader(
+                "Upload test cases",
+                type=['json'],
+                key='testcase_upload'
+            )
+
+        test_cases = []
+        if test_case_file is not None:
+            try:
+                import json as json_lib
+                test_cases = json_lib.load(test_case_file)
+                st.sidebar.success(f"✅ Loaded {len(test_cases)} test cases")
+            except Exception as e:
+                st.sidebar.error(f"Error loading test cases: {e}")
+
+        # Run comprehensive evals
+        comprehensive_results = analyzer.get_comprehensive_evals(
+            resource_inventory=resource_inventory if resource_inventory else None,
+            test_cases=test_cases if test_cases else None,
+        )
+
+        if comprehensive_results.get('error'):
+            st.warning(comprehensive_results['error'])
+        else:
+            # -----------------------------------------------------------------
+            # TAB: EXECUTIVE SUMMARY
+            # -----------------------------------------------------------------
+            with eval_tabs[0]:
+                st.subheader("📊 Executive Summary for Leadership")
+                st.markdown("*One-page view of AI output quality health*")
+
+                exec_summary = comprehensive_results.get('executive_summary', {})
+                if exec_summary.get('error'):
+                    st.warning(exec_summary['error'])
+                else:
+                    # Health score banner
+                    health_score = exec_summary.get('health_score', 0)
+                    health_status = exec_summary.get('health_status', 'unknown')
+                    status_colors = {
+                        'excellent': '🟢',
+                        'good': '🟡',
+                        'needs_attention': '🟠',
+                        'critical': '🔴',
+                    }
+                    status_emoji = status_colors.get(health_status, '⚪')
+
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); 
+                                padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
+                        <h1 style="color: white; margin: 0; font-size: 3rem;">{status_emoji} {health_score}/100</h1>
+                        <p style="color: #ccc; margin: 10px 0 0 0; font-size: 1.2rem;">
+                            Overall Quality Health Score ({health_status.replace('_', ' ').title()})
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Key metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric(
+                        "Pass Rate",
+                        f"{exec_summary.get('pass_rate', 0):.1f}%",
+                        help="Traces with no critical failures"
+                    )
+                    col2.metric(
+                        "Avg Quality Score",
+                        f"{exec_summary.get('avg_quality_score', 0):.1f}",
+                    )
+                    col3.metric(
+                        "Inventory Match",
+                        f"{exec_summary.get('match_rate', 0):.1f}%",
+                        help="Resources found in known inventory (lower = potential hallucinations)"
+                    )
+                    col4.metric(
+                        "Actionable Rate",
+                        f"{exec_summary.get('actionable_rate', 0):.1f}%",
+                        help="Responses with contact details"
+                    )
+
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Traces Evaluated", f"{exec_summary.get('total_traces_evaluated', 0):,}")
+                    col2.metric("Traces with Failures", f"{exec_summary.get('traces_with_any_failure', 0):,}")
+                    col3.metric("Failure Rate", f"{exec_summary.get('failure_rate', 0):.1f}%")
+                    col4.metric(
+                        "Hallucination Rate",
+                        f"{exec_summary.get('hallucination_rate', 0):.1f}%",
+                        delta=None if exec_summary.get('hallucination_rate', 0) == 0 else "needs inventory",
+                    )
+
+                    # Top failure types
+                    st.markdown("### 🚨 Top Failure Types")
+                    top_failures = exec_summary.get('top_failure_types', [])
+                    if top_failures:
+                        failure_df = pd.DataFrame([
+                            {'Failure Type': f[0].replace('_', ' ').title(), 'Count': f[1]}
+                            for f in top_failures
+                        ])
+                        fig_failures = px.bar(
+                            failure_df,
+                            x='Failure Type',
+                            y='Count',
+                            title="Failure counts by type",
+                            color='Count',
+                            color_continuous_scale='Reds',
+                        )
+                        st.plotly_chart(fig_failures, use_container_width=True)
+                    else:
+                        st.success("No failures detected!")
+
+                    # Recommendations
+                    st.markdown("### 💡 Recommendations")
+                    recommendations = exec_summary.get('recommendations', [])
+                    for rec in recommendations:
+                        if '🚨' in rec or '⚠️' in rec:
+                            st.warning(rec)
+                        elif '✅' in rec:
+                            st.success(rec)
+                        else:
+                            st.info(rec)
+
+            # -----------------------------------------------------------------
+            # TAB: FAILURE TAXONOMY
+            # -----------------------------------------------------------------
+            with eval_tabs[1]:
+                st.subheader("🚨 Structured Failure Taxonomy")
+                st.markdown("*Specific, actionable failure categories for diagnosis*")
+
+                taxonomy = comprehensive_results.get('failure_taxonomy', {})
+                failure_counts = taxonomy.get('failure_counts', {})
+
+                # Overview metrics
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Traces with Failures", taxonomy.get('traces_with_failures', 0))
+                col2.metric("Traces without Failures", taxonomy.get('traces_without_failures', 0))
+                col3.metric("Failure Rate", f"{taxonomy.get('failure_rate', 0):.1f}%")
+
+                # Failure breakdown chart
+                if failure_counts:
+                    failure_data = pd.DataFrame([
+                        {'Failure Type': k.replace('_', ' ').title(), 'Count': v}
+                        for k, v in failure_counts.items() if v > 0
+                    ]).sort_values('Count', ascending=True)
+
+                    if not failure_data.empty:
+                        fig = px.bar(
+                            failure_data,
+                            y='Failure Type',
+                            x='Count',
+                            orientation='h',
+                            title="Failures by Type",
+                            color='Count',
+                            color_continuous_scale='Reds',
+                        )
+                        fig.update_layout(height=400)
+                        st.plotly_chart(fig, use_container_width=True)
+
+                # Drill-down by failure type
+                st.markdown("### 🔍 Drill-down by Failure Type")
+                failure_types = [k for k, v in failure_counts.items() if v > 0]
+                if failure_types:
+                    selected_failure = st.selectbox("Select failure type to inspect:", failure_types)
+                    failures_by_type = taxonomy.get('failures_by_type', {})
+                    examples = failures_by_type.get(selected_failure, [])
+
+                    if examples:
+                        st.markdown(f"**{len(examples)} examples of {selected_failure.replace('_', ' ')} failures:**")
+                        examples_df = pd.DataFrame(examples)
+                        st.dataframe(examples_df, use_container_width=True, hide_index=True)
+
+                        csv = examples_df.to_csv(index=False)
+                        st.download_button(
+                            f"⬇️ Download {selected_failure} failures",
+                            csv,
+                            file_name=f"{selected_failure}_failures.csv",
+                            mime="text/csv",
+                        )
+                    else:
+                        st.info("No examples available for this failure type.")
+                else:
+                    st.success("No failures detected in current data!")
+
+            # -----------------------------------------------------------------
+            # TAB: RESOURCE VALIDATION
+            # -----------------------------------------------------------------
+            with eval_tabs[2]:
+                st.subheader("🔍 Resource Validation (Hallucination Detection)")
+                st.markdown("*Compare recommended resources against known inventory*")
+
+                validation = comprehensive_results.get('resource_validation', {})
+                if validation.get('note'):
+                    st.warning(validation['note'])
+                    st.info("Upload a resource inventory file in the sidebar to enable validation.")
+                else:
+                    # Metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Total Recommended", validation.get('total_resources_recommended', 0))
+                    col2.metric("Matched to Inventory", validation.get('matched_to_inventory', 0))
+                    col3.metric("Unmatched (Potential Hallucinations)", validation.get('unmatched_count', 0))
+                    col4.metric("Inventory Size", validation.get('inventory_size', 0))
+
+                    match_rate = validation.get('match_rate', 0)
+                    hallucination_rate = validation.get('hallucination_rate', 0)
+                    health = validation.get('health', 'unknown')
+
+                    health_colors = {'good': '🟢', 'warning': '🟡', 'critical': '🔴'}
+                    st.markdown(f"""
+                    ### {health_colors.get(health, '⚪')} Match Rate: {match_rate:.1f}%
+                    **Hallucination Rate: {hallucination_rate:.1f}%**
+                    """)
+
+                    if hallucination_rate > 10:
+                        st.error(f"⚠️ High hallucination rate ({hallucination_rate:.1f}%) - review unmatched resources")
+
+                    # Unmatched resources
+                    unmatched = validation.get('unmatched_resources', [])
+                    if unmatched:
+                        st.markdown("### ❓ Unmatched Resources (Potential Hallucinations)")
+                        unmatched_df = pd.DataFrame(unmatched)
+                        st.dataframe(unmatched_df, use_container_width=True, hide_index=True)
+
+                        csv = unmatched_df.to_csv(index=False)
+                        st.download_button(
+                            "⬇️ Download unmatched resources",
+                            csv,
+                            file_name="unmatched_resources.csv",
+                            mime="text/csv",
+                        )
+
+            # -----------------------------------------------------------------
+            # TAB: COVERAGE ANALYSIS
+            # -----------------------------------------------------------------
+            with eval_tabs[3]:
+                st.subheader("📈 Coverage Analysis")
+                st.markdown("*Are we recommending the right breadth of resources?*")
+
+                coverage = comprehensive_results.get('coverage_analysis', {})
+                if coverage.get('note'):
+                    st.warning(coverage['note'])
+                    st.info("Upload a resource inventory to enable coverage analysis.")
+                else:
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Total in Inventory", coverage.get('total_in_inventory', 0))
+                    col2.metric("Ever Recommended", coverage.get('total_ever_recommended', 0))
+                    col3.metric("Overall Coverage", f"{coverage.get('overall_coverage_pct', 0):.1f}%")
+
+                    # Under-utilized resources
+                    under_utilized = coverage.get('under_utilized_resources', [])
+                    st.metric("Under-utilized Resources", coverage.get('under_utilized_count', 0))
+
+                    if under_utilized:
+                        st.markdown("### 📋 Under-utilized Resources (Never Recommended)")
+                        st.write(", ".join(under_utilized[:30]))
+                        if len(under_utilized) > 30:
+                            st.caption(f"... and {len(under_utilized) - 30} more")
+
+                    # Category coverage
+                    cat_coverage = coverage.get('category_coverage', {})
+                    if cat_coverage:
+                        st.markdown("### 📊 Coverage by Category")
+                        cat_data = pd.DataFrame([
+                            {
+                                'Category': k.title(),
+                                'In Inventory': v['inventory_count'],
+                                'Ever Recommended': v['recommended_count'],
+                                'Coverage %': v['coverage_pct'],
+                            }
+                            for k, v in cat_coverage.items()
+                        ]).sort_values('Coverage %')
+
+                        fig = px.bar(
+                            cat_data,
+                            x='Category',
+                            y='Coverage %',
+                            title="Coverage % by Category",
+                            color='Coverage %',
+                            color_continuous_scale='RdYlGn',
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                        st.dataframe(cat_data, use_container_width=True, hide_index=True)
+
+            # -----------------------------------------------------------------
+            # TAB: TEST CASES
+            # -----------------------------------------------------------------
+            with eval_tabs[4]:
+                st.subheader("🧪 Gold Standard Test Cases")
+                st.markdown("*Automated testing against expected outputs*")
+
+                test_results = comprehensive_results.get('test_case_results', {})
+                if test_results.get('note'):
+                    st.info(test_results['note'])
+                    st.markdown("""
+                    **To enable test case evaluation:**
+                    1. Create a JSON file with test cases
+                    2. Upload it in the sidebar under "Gold Standard Test Cases"
+
+                    **Test case format:**
+                    ```json
+                    [
+                      {
+                        "query": "I need food assistance in Austin",
+                        "expected_resources": ["Central Texas Food Bank", "Caritas of Austin"],
+                        "expected_category": "food",
+                        "expected_location": "Austin"
+                      }
+                    ]
+                    ```
+                    """)
+                else:
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Total Test Cases", test_results.get('total_test_cases', 0))
+                    col2.metric("Passed", test_results.get('passed', 0))
+                    col3.metric("Failed", test_results.get('failed', 0))
+                    col4.metric("Pass Rate", f"{test_results.get('pass_rate', 0):.1f}%")
+
+                    results = test_results.get('results', [])
+                    if results:
+                        st.markdown("### Test Case Results")
+                        for result in results:
+                            status = result.get('status', 'unknown')
+                            icon = '✅' if status == 'pass' else ('❌' if status == 'fail' else '⚠️')
+                            with st.expander(f"{icon} {result.get('query', 'Unknown query')[:60]}..."):
+                                st.markdown(f"**Status:** {status.upper()}")
+                                st.markdown(f"**Resource Recall:** {result.get('resource_recall', 0):.1f}%")
+                                st.markdown(f"**Resource Precision:** {result.get('resource_precision', 0):.1f}%")
+                                st.markdown(f"**Category Match:** {'✅' if result.get('category_match') else '❌'}")
+                                st.markdown(f"**Location Match:** {'✅' if result.get('location_match') else '❌'}")
+
+                                if result.get('missing_resources'):
+                                    st.warning(f"Missing resources: {', '.join(result['missing_resources'])}")
+                                if result.get('extra_resources'):
+                                    st.info(f"Extra resources: {', '.join(result['extra_resources'])}")
+
+            # -----------------------------------------------------------------
+            # TAB: CONSISTENCY
+            # -----------------------------------------------------------------
+            with eval_tabs[5]:
+                st.subheader("🔄 Consistency Analysis")
+                st.markdown("*Do similar queries produce similar results?*")
+
+                consistency = analyzer.run_consistency_analysis([])
+
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Query Groups Analyzed", consistency.get('groups_analyzed', 0))
+                col2.metric("Inconsistent Groups", consistency.get('inconsistent_groups', 0))
+                col3.metric("Consistency Rate", f"{consistency.get('consistency_rate', 0):.1f}%")
+
+                most_inconsistent = consistency.get('most_inconsistent', [])
+                if most_inconsistent:
+                    st.markdown("### ⚠️ Most Inconsistent Query Groups")
+                    st.caption("These query patterns show high variance in responses")
+                    inconsistent_df = pd.DataFrame([
+                        {
+                            'Query Pattern': r.get('query_group', ''),
+                            'Traces': r.get('num_traces', 0),
+                            'Quality Variance': f"{r.get('quality_variance', 0):.1f}",
+                            'Resource Similarity': f"{r.get('resource_similarity', 0):.1%}",
+                        }
+                        for r in most_inconsistent
+                    ])
+                    st.dataframe(inconsistent_df, use_container_width=True, hide_index=True)
+                else:
+                    st.success("Not enough repeated queries to analyze consistency.")
+
+            # -----------------------------------------------------------------
+            # TAB: DETAILED FLAGS (original functionality)
+            # -----------------------------------------------------------------
+            with eval_tabs[6]:
+                st.subheader("📋 Detailed Automated Flags")
+                st.markdown("*Threshold-based flagging with full drill-down*")
+
+                eval_df = analyzer.get_output_quality_evals()
+                if eval_df.empty:
+                    st.info("No eval data available for automated checks.")
+                else:
+                    eval_df = eval_df.copy()
+                    eval_df['timestamp'] = pd.to_datetime(eval_df.get('timestamp'), errors='coerce')
+
+                    st.markdown("#### ⚙️ Evaluation filters & thresholds")
+                    trace_types = sorted([t for t in eval_df['trace_type'].dropna().unique() if t])
+                    default_types = [t for t in ['referrals', 'email_results', 'action_plans'] if t in trace_types]
+                    selected_types = st.multiselect(
+                        "Trace types to evaluate",
+                        trace_types,
+                        default=default_types or trace_types,
+                        key="detailed_trace_types",
+                    )
+
+                    filter_user_facing = st.checkbox(
+                        "Only user-facing traces (non-empty query & real user)",
+                        value=True,
+                        key="detailed_user_facing",
+                    )
+
+                    with st.expander("Eval thresholds", expanded=False):
+                        min_quality = st.slider(
+                            "Minimum quality score",
+                            min_value=0,
+                            max_value=100,
+                            value=60,
+                            step=5,
+                            key="detailed_min_quality",
+                        )
+                        min_resources = st.slider(
+                            "Minimum resources per response",
+                            min_value=0,
+                            max_value=10,
+                            value=2,
+                            step=1,
+                            key="detailed_min_resources",
+                        )
+                        min_detail_score = st.slider(
+                            "Minimum resource detail score",
+                            min_value=0,
+                            max_value=100,
+                            value=50,
+                            step=5,
+                            help="Proxy for hallucination risk: missing location/contact info lowers score.",
+                            key="detailed_min_detail",
+                        )
+                        require_actionable = st.checkbox(
+                            "Require actionable info when resources are present",
+                            value=True,
+                            key="detailed_require_actionable",
+                        )
+                        enforce_location = st.checkbox(
+                            "Enforce location match when user specified a location",
+                            value=True,
+                            key="detailed_enforce_location",
+                        )
+                        enforce_category = st.checkbox(
+                            "Enforce category match when category is known",
+                            value=False,
+                            key="detailed_enforce_category",
+                        )
+
+                    filtered = eval_df
+                    if selected_types:
+                        filtered = filtered[filtered['trace_type'].isin(selected_types)]
+
+                    if filter_user_facing:
+                        q = filtered['query'].astype(str).str.strip()
+                        u = filtered['user'].astype(str).str.lower().str.strip()
+                        filtered = filtered[
+                            (q != "") & (q != ".") & (~u.str.startswith("unknown")) & (u != "unknown")
+                        ]
+
+                    if filtered.empty:
+                        st.info("No traces match the current filters.")
+                    else:
+                        filtered = filtered.copy()
+                        filtered['quality_score'] = pd.to_numeric(filtered['quality_score'], errors='coerce').fillna(0)
+                        filtered['resource_count'] = pd.to_numeric(filtered['resource_count'], errors='coerce').fillna(0)
+                        filtered['resource_detail_score'] = pd.to_numeric(
+                            filtered.get('resource_detail_score'), errors='coerce'
+                        ).fillna(0)
+
+                        total = len(filtered)
+                        avg_quality = filtered['quality_score'].mean()
+                        location_match_rate = filtered['location_aligned'].mean() * 100 if 'location_aligned' in filtered else 0
+                        category_match_rate = filtered['category_aligned'].mean() * 100 if 'category_aligned' in filtered else 0
+                        actionable_rate = filtered['has_actionable_info'].mean() * 100 if 'has_actionable_info' in filtered else 0
+                        resources_rate = (filtered['resource_count'] > 0).mean() * 100
+                        avg_detail = filtered['resource_detail_score'].mean()
+
+                        st.markdown("#### 📊 Summary")
+                        col1, col2, col3, col4, col5, col6 = st.columns(6)
+                        col1.metric("Traces", f"{total:,}")
+                        col2.metric("Avg Quality", f"{avg_quality:.1f}")
+                        col3.metric("Location Match", f"{location_match_rate:.1f}%")
+                        col4.metric("Category Match", f"{category_match_rate:.1f}%")
+                        col5.metric("Has Resources", f"{resources_rate:.1f}%")
+                        col6.metric("Detail Score", f"{avg_detail:.1f}")
+
+                        st.markdown("#### 🚨 Failure flags")
+                        filtered['flag_no_resources'] = filtered['resource_count'] < min_resources
+                        filtered['flag_low_quality'] = filtered['quality_score'] < min_quality
+                        filtered['flag_low_detail'] = (
+                            (filtered['resource_count'] > 0) & (filtered['resource_detail_score'] < min_detail_score)
+                        )
+                        filtered['flag_generic'] = filtered.get('is_generic', False).fillna(False)
+                        filtered['flag_too_short'] = filtered.get('too_short', False).fillna(False)
+                        filtered['flag_location_mismatch'] = (
+                            enforce_location & (~filtered.get('location_aligned', True))
+                        )
+                        filtered['flag_category_mismatch'] = (
+                            enforce_category & (~filtered.get('category_aligned', True))
+                        )
+                        filtered['flag_not_actionable'] = (
+                            require_actionable
+                            & (filtered['resource_count'] > 0)
+                            & (~filtered.get('has_actionable_info', True))
+                        )
+
+                        flag_cols = [
+                            'flag_no_resources',
+                            'flag_low_quality',
+                            'flag_low_detail',
+                            'flag_generic',
+                            'flag_too_short',
+                            'flag_location_mismatch',
+                            'flag_category_mismatch',
+                            'flag_not_actionable',
+                        ]
+                        issue_counts = {
+                            'No resources': int(filtered['flag_no_resources'].sum()),
+                            'Low quality': int(filtered['flag_low_quality'].sum()),
+                            'Low detail score': int(filtered['flag_low_detail'].sum()),
+                            'Generic response': int(filtered['flag_generic'].sum()),
+                            'Too short': int(filtered['flag_too_short'].sum()),
+                            'Location mismatch': int(filtered['flag_location_mismatch'].sum()),
+                            'Category mismatch': int(filtered['flag_category_mismatch'].sum()),
+                            'Not actionable': int(filtered['flag_not_actionable'].sum()),
+                        }
+
+                        issues_df = pd.DataFrame(
+                            [{'Issue': k, 'Count': v} for k, v in issue_counts.items() if v > 0]
+                        ).sort_values('Count', ascending=False)
+
+                        if not issues_df.empty:
+                            fig_issues = px.bar(
+                                issues_df,
+                                x='Issue',
+                                y='Count',
+                                title="Flag counts by issue type",
+                            )
+                            st.plotly_chart(fig_issues, use_container_width=True)
+                        else:
+                            st.success("No automated failures for the current thresholds.")
+
+                        # Flagged traces table
+                        flagged = filtered[filtered[flag_cols].any(axis=1)].copy()
+                        if not flagged.empty:
+                            def _build_flag_list_inner(row: pd.Series) -> str:
+                                labels = []
+                                if row.get('flag_no_resources'):
+                                    labels.append("no_resources")
+                                if row.get('flag_low_quality'):
+                                    labels.append("low_quality")
+                                if row.get('flag_low_detail'):
+                                    labels.append("low_detail")
+                                if row.get('flag_generic'):
+                                    labels.append("generic")
+                                if row.get('flag_too_short'):
+                                    labels.append("too_short")
+                                if row.get('flag_location_mismatch'):
+                                    labels.append("location_mismatch")
+                                if row.get('flag_category_mismatch'):
+                                    labels.append("category_mismatch")
+                                if row.get('flag_not_actionable'):
+                                    labels.append("not_actionable")
+                                return ", ".join(labels)
+
+                            flagged['flags'] = flagged.apply(_build_flag_list_inner, axis=1)
+                            flagged = flagged.sort_values('quality_score')
+
+                            st.markdown("#### 🧾 Flagged traces")
+                            display_cols = [
+                                'timestamp',
+                                'user',
+                                'query',
+                                'trace_type',
+                                'quality_score',
+                                'resource_count',
+                                'resource_detail_score',
+                                'flags',
+                            ]
+                            display_cols = [c for c in display_cols if c in flagged.columns]
+                            st.dataframe(
+                                flagged[display_cols].head(200),
+                                use_container_width=True,
+                                hide_index=True,
+                            )
+
+                            csv = flagged[display_cols].to_csv(index=False)
+                            st.download_button(
+                                "⬇️ Download flagged traces (CSV)",
+                                csv,
+                                file_name="flagged_traces_detailed.csv",
+                                mime="text/csv",
+                                key="detailed_download",
+                            )
+                        else:
+                            st.success("No traces failed the automated checks with current thresholds.")
 
 
 if __name__ == "__main__":
