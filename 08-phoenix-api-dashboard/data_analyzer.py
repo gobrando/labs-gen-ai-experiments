@@ -191,7 +191,7 @@ class TraceAnalyzer:
         durations = pd.to_numeric(latency_source.get('trace_duration_s'), errors='coerce')
         durations = durations.dropna()
         durations = durations[durations > 0]
-
+        
         # Count traces by type (referrals vs action plans vs email_results)
         trace_counts = {'referrals': 0, 'action_plans': 0, 'email_results': 0, 'other': 0}
         if 'trace_type' in self.traces_df.columns:
@@ -376,6 +376,158 @@ class TraceAnalyzer:
             comparison['error_rate'] = (comparison['error_count'] / comparison['total_requests'] * 100).round(2)
         
         return comparison
+
+    def _extract_user_email_from_spans(
+        self, trace_spans: List[Dict], root_attrs: Dict
+    ) -> str:
+        """
+        Extract user email from trace spans, searching through multiple locations.
+        Returns 'unknown_<trace_id>' if no email found.
+        """
+        # Get trace_id for fallback
+        trace_id = trace_spans[0].get('trace_id', 'unknown') if trace_spans else 'unknown'
+        
+        # Try to find email in multiple locations across all spans
+        email_candidates = []
+        
+        # 1. Check root span attributes first
+        if isinstance(root_attrs, dict):
+            email_candidates.extend(self._find_emails_in_attrs(root_attrs))
+        
+        # 2. Search through ALL spans in the trace
+        for span in trace_spans:
+            span_attrs = span.get('attributes', {})
+            if isinstance(span_attrs, str):
+                try:
+                    span_attrs = json.loads(span_attrs)
+                except Exception:
+                    span_attrs = {}
+            
+            if isinstance(span_attrs, dict):
+                email_candidates.extend(self._find_emails_in_attrs(span_attrs))
+        
+        # 3. Filter and prioritize candidates
+        # Prefer non-test emails, prioritize known domains
+        valid_emails = []
+        for email in email_candidates:
+            if not email or not isinstance(email, str):
+                continue
+            email = email.strip().lower()
+            if '@' not in email:
+                continue
+            # Skip obvious non-emails
+            if email.startswith('unknown_'):
+                continue
+            valid_emails.append(email)
+        
+        if valid_emails:
+            # Prioritize known pilot domains
+            priority_domains = ['gwctx.org', 'yourgoodwill.org']
+            for domain in priority_domains:
+                for email in valid_emails:
+                    if domain in email:
+                        return email
+            # Return first valid email
+            return valid_emails[0]
+        
+        return f'unknown_{trace_id[:8]}'
+
+    def _find_emails_in_attrs(self, attrs: Dict) -> List[str]:
+        """Find all potential email values in an attributes dict."""
+        emails = []
+        
+        if not isinstance(attrs, dict):
+            return emails
+        
+        # Direct email fields
+        for key in ['user_email', 'email', 'user_id', 'userId', 'userEmail']:
+            val = attrs.get(key)
+            if val and isinstance(val, str) and '@' in val:
+                emails.append(val)
+        
+        # Nested in 'user' dict
+        user_info = attrs.get('user', {})
+        if isinstance(user_info, dict):
+            for key in ['email', 'id', 'user_email', 'userId']:
+                val = user_info.get(key)
+                if val and isinstance(val, str) and '@' in val:
+                    emails.append(val)
+        elif isinstance(user_info, str) and '@' in user_info:
+            emails.append(user_info)
+        
+        # Nested in 'metadata' dict
+        metadata = attrs.get('metadata', {})
+        if isinstance(metadata, dict):
+            for key in ['user_email', 'user_id', 'email', 'userId', 'userEmail']:
+                val = metadata.get(key)
+                if val and isinstance(val, str) and '@' in val:
+                    emails.append(val)
+        
+        # Check input.value for JSON with user_email
+        input_data = attrs.get('input', {})
+        if isinstance(input_data, dict):
+            input_value = input_data.get('value', '')
+            if isinstance(input_value, str) and input_value:
+                emails.extend(self._extract_emails_from_json_string(input_value))
+        
+        # Check output.value as well
+        output_data = attrs.get('output', {})
+        if isinstance(output_data, dict):
+            output_value = output_data.get('value', '')
+            if isinstance(output_value, str) and output_value:
+                emails.extend(self._extract_emails_from_json_string(output_value))
+        
+        # Direct input/output string values
+        for key in ['input', 'output']:
+            val = attrs.get(key)
+            if isinstance(val, str) and val:
+                emails.extend(self._extract_emails_from_json_string(val))
+        
+        return emails
+
+    def _extract_emails_from_json_string(self, text: str) -> List[str]:
+        """Extract email addresses from a JSON string."""
+        emails = []
+        
+        # Try to parse as JSON first
+        try:
+            if text.strip().startswith('{') or text.strip().startswith('['):
+                parsed = json.loads(text)
+                emails.extend(self._find_emails_in_parsed_json(parsed))
+        except Exception:
+            pass
+        
+        # Also search for email patterns in the raw text
+        email_pattern = r'[\w.-]+@[\w.-]+\.\w+'
+        found = re.findall(email_pattern, text)
+        for email in found:
+            # Filter out common false positives
+            if not any(x in email.lower() for x in ['example.com', 'test.com', 'placeholder']):
+                emails.append(email)
+        
+        return emails
+
+    def _find_emails_in_parsed_json(self, obj, depth: int = 0) -> List[str]:
+        """Recursively find emails in parsed JSON objects."""
+        emails = []
+        if depth > 10:  # Prevent infinite recursion
+            return emails
+        
+        if isinstance(obj, dict):
+            for key, val in obj.items():
+                # Check common email field names
+                if key.lower() in ['user_email', 'email', 'user_id', 'userid', 'useremail']:
+                    if isinstance(val, str) and '@' in val:
+                        emails.append(val)
+                # Recurse into nested objects
+                if isinstance(val, (dict, list)):
+                    emails.extend(self._find_emails_in_parsed_json(val, depth + 1))
+        elif isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, (dict, list)):
+                    emails.extend(self._find_emails_in_parsed_json(item, depth + 1))
+        
+        return emails
     
     def _create_traces_dataframe(self, spans: List[Dict]) -> pd.DataFrame:
         """
@@ -409,44 +561,8 @@ class TraceAnalyzer:
             root_span = root_spans[0]
             attrs = root_span.get('attributes', {})
             
-            # Extract user information
-            user_id = ''
-            user_email = ''
-            if isinstance(attrs, dict):
-                user_info = attrs.get('user', {})
-                metadata = attrs.get('metadata', {})
-                
-                if isinstance(user_info, dict):
-                    user_id = str(user_info.get('id', '') or user_info.get('email', '')).strip()
-                elif isinstance(user_info, str):
-                    user_id = str(user_info).strip()
-                
-                if isinstance(metadata, dict):
-                    user_email = str(metadata.get('user_id', '') or metadata.get('user_email', '')).strip()
-                    if not user_id:
-                        user_id = user_email
-                
-                if not user_email and user_id:
-                    user_email = user_id
-            
-            # Fallback: try to extract from input data
-            if not user_email:
-                input_data = attrs.get('input', {})
-                if isinstance(input_data, dict):
-                    input_value = input_data.get('value', '')
-                    if isinstance(input_value, str):
-                        try:
-                            parsed = json.loads(input_value)
-                            if isinstance(parsed, dict):
-                                messages = parsed.get('data', {}).get('logger', {}).get('messages_list', [])
-                                if messages and isinstance(messages[0], dict):
-                                    user_email = str(messages[0].get('user_email', '')).strip()
-                        except:
-                            pass
-            
-            # Use trace_id as fallback if no user info
-            if not user_email:
-                user_email = f'unknown_{trace_id[:8]}'
+            # Extract user information - search through multiple locations
+            user_email = self._extract_user_email_from_spans(trace_spans, attrs)
             
             # Extract trace type
             root_name = root_span.get('name', '').lower()
@@ -477,47 +593,6 @@ class TraceAnalyzer:
                         except:
                             pass
                 trace_type = 'referrals' if has_query else 'action_plans'
-            
-            # For email_result traces, try to find the original requesting user
-            # by looking through all span attributes for user info
-            if trace_type == 'email_results' and (not user_email or user_email.startswith('unknown_')):
-                for span in trace_spans:
-                    span_attrs = span.get('attributes', {})
-                    if isinstance(span_attrs, dict):
-                        # Check input data for user email
-                        input_data = span_attrs.get('input', {})
-                        if isinstance(input_data, dict):
-                            input_value = input_data.get('value', '')
-                            if isinstance(input_value, str):
-                                try:
-                                    parsed = json.loads(input_value)
-                                    if isinstance(parsed, dict):
-                                        # Look for user_email in various locations
-                                        email_found = parsed.get('user_email', '')
-                                        if not email_found:
-                                            # Try nested structures
-                                            data = parsed.get('data', {})
-                                            if isinstance(data, dict):
-                                                email_found = data.get('user_email', '')
-                                                if not email_found:
-                                                    logger_data = data.get('logger', {})
-                                                    if isinstance(logger_data, dict):
-                                                        messages = logger_data.get('messages_list', [])
-                                                        if messages and isinstance(messages[0], dict):
-                                                            email_found = messages[0].get('user_email', '')
-                                        if email_found and '@' in email_found:
-                                            user_email = str(email_found).strip()
-                                            break
-                                except:
-                                    pass
-                        
-                        # Also check metadata
-                        metadata = span_attrs.get('metadata', {})
-                        if isinstance(metadata, dict):
-                            email_found = metadata.get('user_email', '') or metadata.get('user_id', '')
-                            if email_found and '@' in str(email_found):
-                                user_email = str(email_found).strip()
-                                break
             
             # Gather query/category/location context from all spans in the trace
             context = self._extract_trace_context(trace_spans)
@@ -768,8 +843,8 @@ class TraceAnalyzer:
             
             trace_records.append({
                 'trace_id': trace_id,
-                'user_email': user_email or user_id or 'unknown',
-                'user_name': user_email.split('@')[0] if user_email and '@' in user_email else user_id,
+                'user_email': user_email,
+                'user_name': user_email.split('@')[0] if user_email and '@' in user_email else 'unknown',
                 'trace_type': trace_type,
                 'trace_start': trace_start,
                 'trace_end': trace_end,
@@ -2689,32 +2764,20 @@ class TraceAnalyzer:
                 continue
             trace_row = trace_rows.iloc[0]
             
-            # Extract output content from spans
+            # Extract output content and resources from spans
             output_text = ""
             resources_found = []
             
             for _, span in trace_spans.iterrows():
+                # Try multiple locations for output data
                 output_attr = span.get('output', '')
-                if isinstance(output_attr, str) and output_attr:
-                    try:
-                        output_data = (
-                            json.loads(output_attr)
-                            if output_attr.startswith('{') or output_attr.startswith('[')
-                            else {}
-                        )
-                        output_text += str(output_data)
-                        
-                        if isinstance(output_data, dict):
-                            for key in ['resources', 'referrals', 'results', 'recommendations', 'data']:
-                                if key in output_data:
-                                    items = output_data[key]
-                                    if isinstance(items, list):
-                                        for item in items:
-                                            if isinstance(item, dict):
-                                                resources_found.append(item)
-                    except Exception:
-                        output_text += output_attr
                 
+                # Parse output attribute
+                if isinstance(output_attr, str) and output_attr:
+                    output_text += output_attr
+                    resources_found.extend(self._extract_resources_from_text_content(output_attr))
+                
+                # Check span attributes for nested output
                 attrs = span.get('attributes', {})
                 if isinstance(attrs, str):
                     try:
@@ -2723,15 +2786,36 @@ class TraceAnalyzer:
                         attrs = {}
                 
                 if isinstance(attrs, dict):
-                    for key in ['output.value', 'llm.output_messages', 'output']:
+                    # Check output.value (common location)
+                    output_data = attrs.get('output', {})
+                    if isinstance(output_data, dict):
+                        output_value = output_data.get('value', '')
+                        if isinstance(output_value, str) and output_value:
+                            output_text += output_value
+                            resources_found.extend(self._extract_resources_from_text_content(output_value))
+                    
+                    # Check llm.replies for resource JSON
+                    llm_data = attrs.get('llm', {})
+                    if isinstance(llm_data, dict):
+                        replies = llm_data.get('replies', [])
+                        for reply in replies:
+                            if isinstance(reply, str):
+                                output_text += reply
+                                resources_found.extend(self._extract_resources_from_text_content(reply))
+                    
+                    # Also check direct output.value at attribute level
+                    for key in ['output.value', 'llm.output_messages']:
                         if key in attrs:
                             val = attrs[key]
                             if isinstance(val, str):
                                 output_text += val
+                                resources_found.extend(self._extract_resources_from_text_content(val))
                             elif isinstance(val, list):
                                 for v in val:
                                     if isinstance(v, dict):
-                                        output_text += str(v.get('message', {}).get('content', ''))
+                                        content = str(v.get('message', {}).get('content', ''))
+                                        output_text += content
+                                        resources_found.extend(self._extract_resources_from_text_content(content))
             
             analysis = self._score_output_quality(
                 output_text=output_text,
@@ -2749,10 +2833,97 @@ class TraceAnalyzer:
             analysis['query'] = trace_row.get('query', '')[:200]
             analysis['trace_type'] = trace_row.get('trace_type', '')
             analysis['timestamp'] = trace_row.get('trace_start', None)
+            analysis['output_text'] = output_text[:5000]  # Store truncated for checks
+            analysis['resources_found'] = resources_found  # Store for failure taxonomy
             
             output_analyses.append(analysis)
         
         return output_analyses
+
+    def _extract_resources_from_text_content(self, text: str) -> List[Dict]:
+        """
+        Extract resources from text content, handling various formats:
+        - JSON with {"resources": [...]}
+        - JSON with {"resource_type": ...}
+        - Embedded JSON in text
+        """
+        if not text or not isinstance(text, str):
+            return []
+        
+        resources = []
+        
+        # Try to find and parse JSON blocks containing resources
+        # Pattern 1: {"resources": [...]}
+        json_patterns = [
+            r'\{"resources"\s*:\s*\[',
+            r'\{"resource_type"\s*:',
+            r'\{"referrals"\s*:\s*\[',
+            r'\{"results"\s*:\s*\[',
+            r'\{"recommendations"\s*:\s*\[',
+        ]
+        
+        for pattern in json_patterns:
+            match = re.search(pattern, text)
+            if match:
+                start_idx = match.start()
+                # Find the end of the JSON object by counting braces
+                brace_count = 0
+                end_idx = start_idx
+                in_string = False
+                escape_next = False
+                
+                for i, char in enumerate(text[start_idx:], start=start_idx):
+                    if escape_next:
+                        escape_next = False
+                        continue
+                    if char == '\\':
+                        escape_next = True
+                        continue
+                    if char == '"' and not escape_next:
+                        in_string = not in_string
+                    if not in_string:
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i + 1
+                                break
+                
+                if end_idx > start_idx:
+                    json_str = text[start_idx:end_idx]
+                    # Clean up common escape issues
+                    json_str = json_str.replace('\\n', ' ').replace('\\"', '"')
+                    
+                    try:
+                        parsed = json.loads(json_str)
+                        if isinstance(parsed, dict):
+                            for key in ['resources', 'referrals', 'results', 'recommendations', 'data']:
+                                if key in parsed and isinstance(parsed[key], list):
+                                    for item in parsed[key]:
+                                        if isinstance(item, dict):
+                                            resources.append(item)
+                    except json.JSONDecodeError:
+                        pass
+        
+        # Also try parsing the whole text as JSON
+        if text.strip().startswith('{') or text.strip().startswith('['):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, dict):
+                    for key in ['resources', 'referrals', 'results', 'recommendations', 'data']:
+                        if key in parsed and isinstance(parsed[key], list):
+                            for item in parsed[key]:
+                                if isinstance(item, dict):
+                                    resources.append(item)
+                elif isinstance(parsed, list):
+                    for item in parsed:
+                        if isinstance(item, dict) and ('name' in item or 'title' in item or 'organization' in item):
+                            resources.append(item)
+            except json.JSONDecodeError:
+                pass
+        
+        return resources
 
     def _calculate_resource_detail_stats(self, resources: List[Dict]) -> Dict:
         """Compute resource detail completeness as a proxy for hallucination risk."""
@@ -3489,14 +3660,32 @@ class TraceAnalyzer:
                     'reason': 'Response too short',
                 })
             
-            # No resources (for referral type)
+            # No resources (for referral type) - be smarter about this check
+            # Only flag if: it's a referral, no structured resources found, 
+            # AND the output doesn't look like it contains resource information
             if analysis.get('trace_type') == 'referrals' and analysis.get('resource_count', 0) == 0:
-                trace_failures.append('no_resources')
-                failures['no_resources'].append({
-                    'trace_id': analysis.get('trace_id'),
-                    'query': analysis.get('query', ''),
-                    'reason': 'Referral query returned no resources',
-                })
+                output_text_check = analysis.get('output_text', '').lower()
+                output_length = analysis.get('output_length', 0)
+                
+                # Check if output text mentions resource-like content even if we couldn't parse it
+                resource_indicators = [
+                    'address', 'phone', '512-', '737-', '(512)', '(737)',
+                    'website', 'www.', 'http', '.org', '.com',
+                    'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+                    'hours:', 'open:', 'services:', 'provides:', 'offers:',
+                    'food bank', 'food pantry', 'shelter', 'clinic', 'assistance',
+                    'central texas', 'austin', 'travis county'
+                ]
+                has_resource_content = any(ind in output_text_check for ind in resource_indicators)
+                
+                # Only flag as "no resources" if output is short AND doesn't look like resource content
+                if output_length < 200 or not has_resource_content:
+                    trace_failures.append('no_resources')
+                    failures['no_resources'].append({
+                        'trace_id': analysis.get('trace_id'),
+                        'query': analysis.get('query', ''),
+                        'reason': 'Referral query returned no resources',
+                    })
             
             # Safety check (basic keyword detection)
             output_text = analysis.get('output_text', '').lower()

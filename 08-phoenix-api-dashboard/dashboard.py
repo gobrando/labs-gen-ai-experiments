@@ -705,8 +705,86 @@ kmchugh@yourgoodwill.org"""
             )
             st.plotly_chart(fig_org, use_container_width=True)
 
+            # Usage by Pilot Location (domain-based)
+            st.subheader("🏢 Usage by Pilot Location")
+            st.caption(
+                "Total organic usage grouped by pilot location (based on email domain). "
+                "This captures ALL users from each location without needing exact email lists."
+            )
+
+            if 'user_email' not in organic_df.columns:
+                st.info("No user email field available to compute location-based usage.")
+            else:
+                # Categorize by domain
+                emails_lower = organic_df['user_email'].astype(str).str.lower().str.strip()
+                
+                organic_df_loc = organic_df.copy()
+                organic_df_loc['pilot_location'] = 'Other'
+                organic_df_loc.loc[emails_lower.str.contains('@gwctx.org', na=False), 'pilot_location'] = 'CTX (Goodwill Central Texas)'
+                organic_df_loc.loc[emails_lower.str.contains('@yourgoodwill.org', na=False), 'pilot_location'] = 'Keystone (Goodwill Keystone)'
+                
+                # Summary metrics
+                col1, col2, col3, col4 = st.columns(4)
+                ctx_count = len(organic_df_loc[organic_df_loc['pilot_location'] == 'CTX (Goodwill Central Texas)'])
+                keystone_count = len(organic_df_loc[organic_df_loc['pilot_location'] == 'Keystone (Goodwill Keystone)'])
+                other_count = len(organic_df_loc[organic_df_loc['pilot_location'] == 'Other'])
+                total_organic = len(organic_df_loc)
+                
+                col1.metric("Total Organic", f"{total_organic:,}")
+                col2.metric("CTX", f"{ctx_count:,}", f"{ctx_count/total_organic*100:.0f}%" if total_organic else "0%")
+                col3.metric("Keystone", f"{keystone_count:,}", f"{keystone_count/total_organic*100:.0f}%" if total_organic else "0%")
+                col4.metric("Other", f"{other_count:,}", f"{other_count/total_organic*100:.0f}%" if total_organic else "0%")
+                
+                # Time series by location
+                ctx_series = organic_df_loc[organic_df_loc['pilot_location'] == 'CTX (Goodwill Central Texas)'].set_index('_trace_start_utc').resample(ts_freq).size().rename('CTX')
+                keystone_loc_series = organic_df_loc[organic_df_loc['pilot_location'] == 'Keystone (Goodwill Keystone)'].set_index('_trace_start_utc').resample(ts_freq).size().rename('Keystone')
+                other_series = organic_df_loc[organic_df_loc['pilot_location'] == 'Other'].set_index('_trace_start_utc').resample(ts_freq).size().rename('Other')
+                
+                location_ts = (
+                    pd.concat([ctx_series, keystone_loc_series, other_series], axis=1)
+                    .fillna(0)
+                    .astype(int)
+                    .reset_index()
+                    .rename(columns={'_trace_start_utc': 'timestamp'})
+                )
+                
+                fig_loc = go.Figure()
+                fig_loc.add_trace(go.Scatter(
+                    x=location_ts['timestamp'], y=location_ts['CTX'],
+                    name="CTX (Central Texas)", line=dict(color="#1f77b4", width=3),
+                    mode='lines+markers'
+                ))
+                fig_loc.add_trace(go.Scatter(
+                    x=location_ts['timestamp'], y=location_ts['Keystone'],
+                    name="Keystone", line=dict(color="#9467bd", width=3),
+                    mode='lines+markers'
+                ))
+                fig_loc.add_trace(go.Scatter(
+                    x=location_ts['timestamp'], y=location_ts['Other'],
+                    name="Other", line=dict(color="#7f7f7f", width=1, dash='dot'),
+                    opacity=0.5
+                ))
+                fig_loc.update_layout(
+                    title="Organic Usage Over Time by Pilot Location",
+                    height=450,
+                    xaxis_title="Time",
+                    yaxis_title="Trace Count",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                )
+                st.plotly_chart(fig_loc, use_container_width=True)
+                
+                # Show who's in "Other" if any
+                if other_count > 0:
+                    with st.expander(f"ℹ️ {other_count} traces in 'Other' category (click to see details)", expanded=False):
+                        other_emails = organic_df_loc[organic_df_loc['pilot_location'] == 'Other']['user_email'].value_counts().reset_index()
+                        other_emails.columns = ['Email', 'Trace Count']
+                        st.dataframe(other_emails, use_container_width=True, hide_index=True)
+                        st.caption("These are organic traces from users not matching @gwctx.org or @yourgoodwill.org domains.")
+
+            st.divider()
+
             # Organic pilot cohort usage (G1/G2/G3/Keystone)
-            st.subheader("🌿 Organic Pilot Usage (G1/G2/G3/Keystone)")
+            st.subheader("🌿 Organic Pilot Usage by Cohort Wave (G1/G2/G3/Keystone)")
             st.caption(
                 "Tracks organic usage for the pilot cohorts only (after excluding meeting windows)."
             )
@@ -794,6 +872,36 @@ kmchugh@yourgoodwill.org"""
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                 )
                 st.plotly_chart(fig_coh, use_container_width=True)
+
+                # Show unmatched organic traces (users not in any defined cohort)
+                all_cohort_emails = g1_set | g2_set | g3_set | keystone_set
+                unmatched_mask = ~org_emails.isin(all_cohort_emails)
+                unmatched_organic = organic_df[unmatched_mask].copy()
+                
+                if not unmatched_organic.empty:
+                    with st.expander(f"⚠️ {len(unmatched_organic)} organic traces NOT in any cohort (click to investigate)", expanded=False):
+                        st.markdown("These organic traces have user emails that don't match G1/G2/G3/Keystone lists:")
+                        
+                        # Show unique unmatched emails
+                        unmatched_emails = unmatched_organic['user_email'].value_counts().reset_index()
+                        unmatched_emails.columns = ['Email', 'Trace Count']
+                        st.dataframe(unmatched_emails.head(20), use_container_width=True, hide_index=True)
+                        
+                        st.markdown("**Possible causes:**")
+                        st.markdown("""
+                        - Email extracted in different format than cohort list
+                        - User not added to any cohort list yet
+                        - Email showing as 'unknown_xxx' (extraction failed)
+                        """)
+                        
+                        # Check for potential matches (close but not exact)
+                        st.markdown("**Potential cohort matches (partial email match):**")
+                        for email in unmatched_organic['user_email'].unique()[:10]:
+                            email_lower = str(email).lower()
+                            if '@yourgoodwill.org' in email_lower:
+                                st.warning(f"'{email}' looks like a Keystone user but isn't in the Keystone email list")
+                            elif '@gwctx.org' in email_lower:
+                                st.warning(f"'{email}' looks like a G1/G2/G3 user but isn't in those lists")
     
     # TAB 3: Usage Report
     with tab3:
