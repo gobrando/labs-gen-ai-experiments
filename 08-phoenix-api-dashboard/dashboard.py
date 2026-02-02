@@ -8,7 +8,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 from datetime import datetime, timedelta, timezone
-from typing import Dict
 from zoneinfo import ZoneInfo
 import os
 from dotenv import load_dotenv
@@ -1301,7 +1300,7 @@ ritadecarlo675@gmail.com"""
         st.subheader("📥 Export Report")
         
         # Prepare export data
-        export_data = {
+        _export_data = {
             'Usage Summary': pd.DataFrame([{
                 'Total Users': total_users,
                 'Total Traces': len(analyzer.traces_df),
@@ -2266,7 +2265,7 @@ ritadecarlo675@gmail.com"""
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("**Period 1 (Previous)**")
-            p1_days = st.slider("Days ago (start)", 7, 30, 14, key="p1_days")
+            _p1_days = st.slider("Days ago (start)", 7, 30, 14, key="p1_days")
         with col2:
             st.markdown("**Period 2 (Recent)**")
             p2_days = st.slider("Days to compare", 3, 14, 7, key="p2_days")
@@ -2296,7 +2295,7 @@ ritadecarlo675@gmail.com"""
             
             col1, col2, col3, col4, col5 = st.columns(5)
             
-            p1_metrics = p1.get('metrics', {})
+            _p1_metrics = p1.get('metrics', {})
             p2_metrics = p2.get('metrics', {})
             
             with col1:
@@ -3440,7 +3439,7 @@ ritadecarlo675@gmail.com"""
                         avg_quality = filtered['quality_score'].mean()
                         location_match_rate = filtered['location_aligned'].mean() * 100 if 'location_aligned' in filtered else 0
                         category_match_rate = filtered['category_aligned'].mean() * 100 if 'category_aligned' in filtered else 0
-                        actionable_rate = filtered['has_actionable_info'].mean() * 100 if 'has_actionable_info' in filtered else 0
+                        _actionable_rate = filtered['has_actionable_info'].mean() * 100 if 'has_actionable_info' in filtered else 0
                         resources_rate = (filtered['resource_count'] > 0).mean() * 100
                         avg_detail = filtered['resource_detail_score'].mean()
 

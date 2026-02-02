@@ -3,11 +3,10 @@ Phoenix Arize API Client
 Handles all interactions with the Phoenix REST API
 """
 import requests
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import logging
 import pyarrow as pa
-import pyarrow.parquet as pq
 import io
 import pandas as pd
 import json
@@ -204,7 +203,7 @@ class PhoenixClient:
                 if isinstance(attributes, str):
                     try:
                         attributes = json.loads(attributes)
-                    except:
+                    except Exception:
                         attributes = {}
                 
                 span = {
