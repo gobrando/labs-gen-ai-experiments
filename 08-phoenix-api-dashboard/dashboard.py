@@ -472,7 +472,9 @@ kmchugh@yourgoodwill.org"""
             selected_user = st.selectbox(
                 "Select a user to view detailed trace history",
                 options=user_analytics["user_email"].tolist(),
-                format_func=lambda x: f"{user_analytics[user_analytics['user_email'] == x]['user_name'].iloc[0]} ({x})",
+                format_func=lambda x: (
+                    f"{user_analytics[user_analytics['user_email'] == x]['user_name'].iloc[0]} ({x})"
+                ),
             )
 
             if selected_user:
