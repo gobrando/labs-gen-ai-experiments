@@ -1,0 +1,18 @@
+# Credentials - NEVER commit
+service-account.json
+*.json.backup
+.streamlit/secrets.toml
+
+# Local cache
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
