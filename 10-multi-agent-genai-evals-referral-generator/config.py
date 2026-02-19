@@ -1,9 +1,16 @@
 """Configuration settings for the Phoenix Logs Agent Evals app."""
 
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load env from local project first, then common fallback locations.
+PROJECT_ROOT = Path(__file__).resolve().parent
+load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv()  # current process defaults
+load_dotenv(Path.home() / ".env")
+load_dotenv(Path.home() / "phoenix-logs-agent-evals" / ".env")
 
 # LLM Provider Settings
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -64,6 +71,8 @@ READABILITY_COLUMNS = [
 
 TRACE_METADATA_COLUMNS = [
     "web_search_performed",
+    "web_search_used",
+    "web_search_detection_source",
     "prompted_categories",
     "region_bucket",
 ]

@@ -6,16 +6,20 @@ Multi-agent workflow that evaluates GenAI trace log outputs
 
 import asyncio
 import base64
+import json
+import math
 import os
 import re
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 import httpx
 import pandas as pd
 import streamlit as st
+from dotenv import set_key
 
 # Ensure project root is on path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -93,6 +97,8 @@ st.markdown("""
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+LOCAL_ENV_PATH = Path(__file__).resolve().parent / ".env"
+
 def get_referral_agents(provider: str, model: str) -> list:
     """Instantiate all referral evaluation agents."""
     return [
@@ -124,6 +130,76 @@ def infer_region_bucket(prompt_type: str, location: str) -> str:
     if "tx" in pt or "texas" in loc or " austin" in loc:
         return "texas"
     return "unknown"
+
+
+def calculate_sample_size(
+    population_size: int,
+    confidence_level: int = 90,
+    margin_of_error: float = 0.08,
+    proportion: float = 0.5,
+) -> int:
+    """Calculate finite-population sample size for manual review targets."""
+    if population_size <= 0:
+        return 0
+
+    z_scores = {
+        90: 1.645,
+        95: 1.96,
+        99: 2.576,
+    }
+    z = z_scores.get(confidence_level, 1.645)
+    p = min(max(proportion, 0.01), 0.99)
+    e = min(max(margin_of_error, 0.01), 0.5)
+    n = population_size
+
+    numerator = n * (z ** 2) * p * (1 - p)
+    denominator = (e ** 2) * (n - 1) + (z ** 2) * p * (1 - p)
+    if denominator == 0:
+        return 0
+    return int(math.ceil(numerator / denominator))
+
+
+def count_completed_reviews(df: pd.DataFrame) -> int:
+    """Count rows with at least one completed overall verdict."""
+    referral_col = df.get("referral_overall_review", pd.Series([""] * len(df))).fillna("").astype(str).str.strip()
+    actionplan_col = df.get("actionplan_overallreview", pd.Series([""] * len(df))).fillna("").astype(str).str.strip()
+    completed_mask = (
+        referral_col.ne("")
+        | actionplan_col.ne("")
+    )
+    completed_mask &= ~(
+        referral_col.str.upper().eq("ERROR")
+        & actionplan_col.str.upper().eq("ERROR")
+    )
+    return int(completed_mask.sum())
+
+
+def sync_web_search_alias_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep web_search_performed and web_search_used aligned.
+
+    `web_search_performed` remains the internal canonical column.
+    `web_search_used` is maintained as an export/sheet-compatible alias.
+    """
+    df = df.copy()
+    has_performed = "web_search_performed" in df.columns
+    has_used = "web_search_used" in df.columns
+
+    if not has_performed and has_used:
+        df["web_search_performed"] = df["web_search_used"]
+        has_performed = True
+    if not has_used and has_performed:
+        df["web_search_used"] = df["web_search_performed"]
+        has_used = True
+
+    if has_performed and has_used:
+        performed = df["web_search_performed"].fillna("").astype(str).str.strip()
+        used = df["web_search_used"].fillna("").astype(str).str.strip()
+        backfill_mask = performed.eq("") & used.ne("")
+        if backfill_mask.any():
+            df.loc[backfill_mask, "web_search_performed"] = used[backfill_mask]
+        df["web_search_used"] = df["web_search_performed"]
+
+    return df
 
 
 def extract_prompted_categories(query: str, existing_category_type: str = "") -> str:
@@ -166,10 +242,10 @@ def extract_prompted_categories(query: str, existing_category_type: str = "") ->
 
 
 def detect_web_search_performed(row: pd.Series) -> str:
-    """Detect whether web search tool execution appears in span-like columns.
+    """Detect web search usage from span-like columns in a CSV row.
 
     Returns:
-        YES | NO | UNKNOWN
+        YES | NO | DISTANCE_ONLY | N/A | UNKNOWN
     """
     span_like_cols = [
         col
@@ -184,9 +260,28 @@ def detect_web_search_performed(row: pd.Series) -> str:
     if not searchable.strip():
         return "UNKNOWN"
 
-    if any(token in searchable for token in ("openaiwebsearch", "web_search", "websearch")):
+    has_generator = "openaiwebsearchgenerator.run" in searchable
+    has_web_search_call = "web_search_call" in searchable
+    has_real_search = any(
+        token in searchable
+        for token in (
+            "action_type\":\"search",
+            "action_type': 'search",
+            "action_type=search",
+            "source_urls",
+        )
+    )
+    has_distance_calc = "calculator:" in searchable and "distance" in searchable
+
+    if has_real_search:
         return "YES"
-    return "NO"
+    if has_distance_calc:
+        return "DISTANCE_ONLY"
+    if has_generator and not has_web_search_call:
+        return "NO"
+    if has_generator or has_web_search_call:
+        return "NO"
+    return "N/A"
 
 
 def _extract_strings_recursive(obj: Any) -> str:
@@ -213,12 +308,118 @@ def _contains_web_search_marker(content_text: str) -> bool:
     )
 
 
+def _normalize_span_attributes(attrs: Any) -> dict:
+    """Return span attributes as a dictionary."""
+    if isinstance(attrs, dict):
+        return attrs
+    if isinstance(attrs, str):
+        try:
+            parsed = json.loads(attrs)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            return {}
+    return {}
+
+
+def _detect_web_search_from_spans(spans: list[dict]) -> str:
+    """Apply documented detection decision tree over trace spans."""
+    has_generator = False
+    web_search_calls: list[dict] = []
+
+    for span in spans:
+        name = str(span.get("name", ""))
+        if name == "OpenAIWebSearchGenerator.run":
+            has_generator = True
+        elif name == "web_search_call":
+            web_search_calls.append(span)
+
+    if not has_generator and not web_search_calls:
+        return "N/A"
+    if not web_search_calls:
+        return "NO"
+
+    has_real_search = False
+    has_distance = False
+    for call_span in web_search_calls:
+        attrs = _normalize_span_attributes(call_span.get("attributes", {}))
+        action_type = str(
+            attrs.get("action_type", "")
+            or attrs.get("tool.parameters.action_type", "")
+        ).strip().lower()
+        query = str(
+            attrs.get("query", "")
+            or attrs.get("tool.parameters.query", "")
+        ).strip()
+        source_urls = str(
+            attrs.get("source_urls", "")
+            or attrs.get("tool.parameters.source_urls", "")
+        ).strip()
+
+        if action_type == "search" and source_urls:
+            has_real_search = True
+            continue
+
+        query_lower = query.lower()
+        if query_lower.startswith("calculator:"):
+            calc_rest = query_lower.split(":", 1)[1].strip() if ":" in query_lower else ""
+            if "distance" in calc_rest:
+                has_distance = True
+            continue
+
+        if query and not query_lower.startswith("calculator"):
+            has_real_search = True
+
+    if has_real_search:
+        return "YES"
+    if has_distance:
+        return "DISTANCE_ONLY"
+    return "NO"
+
+
+def _extract_spans_from_payload(payload: Any, trace_id: str = "") -> list[dict]:
+    """Extract span dictionaries from common Phoenix response shapes."""
+    spans: list[dict] = []
+    if isinstance(payload, dict):
+        if isinstance(payload.get("data"), list):
+            spans = [s for s in payload.get("data", []) if isinstance(s, dict)]
+        elif isinstance(payload.get("spans"), list):
+            spans = [s for s in payload.get("spans", []) if isinstance(s, dict)]
+        elif payload.get("name") and payload.get("context"):
+            spans = [payload]
+    elif isinstance(payload, list):
+        spans = [s for s in payload if isinstance(s, dict)]
+
+    if trace_id:
+        filtered = []
+        for span in spans:
+            context = span.get("context", {})
+            if isinstance(context, dict) and str(context.get("trace_id", "")) == trace_id:
+                filtered.append(span)
+        if filtered:
+            return filtered
+    return spans
+
+
 def _decode_selected_span_node_id(encoded_id: str) -> str:
     """Decode selectedSpanNodeId (base64 like 'U3BhbjozMTcyMw==') to numeric span id."""
     if not encoded_id:
         return ""
     try:
         decoded = base64.b64decode(encoded_id).decode("utf-8")
+    except Exception:
+        return ""
+    if ":" in decoded:
+        return decoded.split(":")[-1].strip()
+    return decoded.strip()
+
+
+def _decode_project_token(project_token: str) -> str:
+    """Decode project token like UHJvamVjdDoxOQ== -> 19."""
+    if not project_token:
+        return ""
+    try:
+        decoded = base64.b64decode(project_token).decode("utf-8")
     except Exception:
         return ""
     if ":" in decoded:
@@ -242,12 +443,27 @@ def parse_phoenix_link(link: str) -> dict:
     parsed = urlparse(link)
     base_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
 
+    project_id_token = project_match.group(1) if project_match else ""
+    project_id = _decode_project_token(project_id_token)
+
     return {
         "base_url": base_url,
-        "project_id_token": project_match.group(1) if project_match else "",
+        "project_id_token": project_id_token,
+        "project_id": project_id,
         "span_path_id": span_match.group(1) if span_match else "",
         "selected_span_id": selected_span_id,
     }
+
+
+def _auth_header_variants(api_key: str) -> list[dict]:
+    """Generate multiple auth header variants for Phoenix deployments."""
+    if not api_key:
+        return [{}]
+    return [
+        {"Authorization": f"Bearer {api_key}", "x-api-key": api_key, "X-API-Key": api_key, "api-key": api_key},
+        {"Authorization": api_key, "x-api-key": api_key, "X-API-Key": api_key, "api-key": api_key},
+        {"x-api-key": api_key, "X-API-Key": api_key, "api-key": api_key},
+    ]
 
 
 async def _lookup_trace_web_search_status(
@@ -257,8 +473,10 @@ async def _lookup_trace_web_search_status(
     span_path_id: str = "",
     selected_span_id: str = "",
     project_id_token: str = "",
+    project_id: str = "",
+    api_key: str = "",
 ) -> str:
-    """Try several Phoenix endpoints and infer YES/NO/UNKNOWN from response content."""
+    """Try several Phoenix endpoints and infer YES/NO/DISTANCE_ONLY/N/A/UNKNOWN."""
     if not trace_id:
         return "UNKNOWN"
 
@@ -294,29 +512,52 @@ async def _lookup_trace_web_search_status(
                 f"{base}/v1/projects/{project_id_token}/traces/{trace_id}",
             ]
         )
+    if project_id:
+        candidates.extend(
+            [
+                f"{base}/v1/projects/{project_id}/spans?trace_id={trace_id}",
+                f"{base}/v1/projects/{project_id}/traces/{trace_id}",
+                f"{base}/api/v1/projects/{project_id}/spans?trace_id={trace_id}",
+                f"{base}/api/v1/projects/{project_id}/traces/{trace_id}",
+            ]
+        )
 
     got_parseable_response = False
+    best_status = "UNKNOWN"
     for url in candidates:
-        try:
-            resp = await client.get(url)
-        except Exception:
-            continue
+        resp = None
+        for hdrs in _auth_header_variants(api_key):
+            try:
+                resp = await client.get(url, headers=hdrs)
+            except Exception:
+                continue
+            if resp.status_code not in (401, 403):
+                break
 
-        if resp.status_code >= 400:
+        if resp is None or resp.status_code >= 400:
             continue
 
         got_parseable_response = True
-        content_text = ""
         try:
-            content_text = _extract_strings_recursive(resp.json()).lower()
+            payload = resp.json()
+            spans = _extract_spans_from_payload(payload, trace_id=trace_id)
+            if spans:
+                status = _detect_web_search_from_spans(spans)
+                if status == "YES":
+                    return "YES"
+                if status in ("DISTANCE_ONLY", "NO", "N/A"):
+                    best_status = status
         except Exception:
             content_text = (resp.text or "").lower()
+            if _contains_web_search_marker(content_text):
+                return "YES"
+            if "calculator:" in content_text and "distance" in content_text:
+                best_status = "DISTANCE_ONLY"
 
-        if _contains_web_search_marker(content_text):
-            return "YES"
-
+    if got_parseable_response and best_status != "UNKNOWN":
+        return best_status
     if got_parseable_response:
-        return "NO"
+        return "N/A"
     return "UNKNOWN"
 
 
@@ -326,6 +567,7 @@ async def probe_trace_web_search_debug(
     span_path_id: str,
     selected_span_id: str,
     project_id_token: str,
+    project_id: str,
     api_key: str = "",
 ) -> dict:
     """Debug probe for one trace; returns endpoint-level status details."""
@@ -339,11 +581,6 @@ async def probe_trace_web_search_debug(
     if not base_url:
         result["attempts"].append({"endpoint": "(none)", "status": "missing_base_url"})
         return result
-
-    headers = {}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-        headers["x-api-key"] = api_key
 
     timeout = httpx.Timeout(12.0)
     limits = httpx.Limits(max_connections=8, max_keepalive_connections=4)
@@ -379,16 +616,35 @@ async def probe_trace_web_search_debug(
                 f"{base}/v1/projects/{project_id_token}/traces/{trace_id}",
             ]
         )
+    if project_id:
+        endpoints.extend(
+            [
+                f"{base}/v1/projects/{project_id}/spans?trace_id={trace_id}",
+                f"{base}/v1/projects/{project_id}/traces/{trace_id}",
+                f"{base}/api/v1/projects/{project_id}/spans?trace_id={trace_id}",
+                f"{base}/api/v1/projects/{project_id}/traces/{trace_id}",
+            ]
+        )
 
-    async with httpx.AsyncClient(headers=headers, timeout=timeout, limits=limits) as client:
+    async with httpx.AsyncClient(timeout=timeout, limits=limits) as client:
         for endpoint in endpoints:
-            try:
-                resp = await client.get(endpoint)
-            except Exception as exc:
-                result["attempts"].append({"endpoint": endpoint, "status": f"error: {exc}"})
+            resp = None
+            auth_used = ""
+            for hdrs in _auth_header_variants(api_key):
+                auth_used = "none" if not hdrs else ",".join(sorted(hdrs.keys()))
+                try:
+                    resp = await client.get(endpoint, headers=hdrs)
+                except Exception as exc:
+                    result["attempts"].append({"endpoint": endpoint, "auth": auth_used, "status": f"error: {exc}"})
+                    resp = None
+                    continue
+                if resp.status_code not in (401, 403):
+                    break
+
+            if resp is None:
                 continue
 
-            attempt = {"endpoint": endpoint, "status_code": resp.status_code, "detected": "NO"}
+            attempt = {"endpoint": endpoint, "auth": auth_used, "status_code": resp.status_code, "detected": "NO"}
             if resp.status_code >= 400:
                 result["attempts"].append(attempt)
                 continue
@@ -423,6 +679,9 @@ async def enrich_web_search_from_phoenix_api(
     """Resolve UNKNOWN web_search_performed rows via Phoenix API lookups."""
     if not phoenix_base_url and "phoenix_link" not in df.columns:
         return df
+
+    if "web_search_detection_source" not in df.columns:
+        df["web_search_detection_source"] = "heuristic"
 
     unknown_mask = (
         df.get("web_search_performed", pd.Series(["UNKNOWN"] * len(df)))
@@ -459,6 +718,8 @@ async def enrich_web_search_from_phoenix_api(
                     span_path_id=parsed_link["span_path_id"],
                     selected_span_id=parsed_link["selected_span_id"],
                     project_id_token=parsed_link["project_id_token"],
+                    project_id=parsed_link["project_id"],
+                    api_key=phoenix_api_key,
                 )
             )
 
@@ -466,6 +727,10 @@ async def enrich_web_search_from_phoenix_api(
         for idx, result in zip(candidate_indices, results):
             if isinstance(result, str):
                 df.at[idx, "web_search_performed"] = result
+                if result in ("YES", "NO", "DISTANCE_ONLY", "N/A"):
+                    df.at[idx, "web_search_detection_source"] = "phoenix_api"
+                else:
+                    df.at[idx, "web_search_detection_source"] = "heuristic_unknown"
 
     return df
 
@@ -473,7 +738,7 @@ async def enrich_web_search_from_phoenix_api(
 def enrich_trace_metadata(df: pd.DataFrame) -> pd.DataFrame:
     """Add/refresh metadata columns used for macro trace analytics."""
     df = df.copy()
-    for col in ("web_search_performed", "prompted_categories", "region_bucket"):
+    for col in ("web_search_performed", "web_search_detection_source", "prompted_categories", "region_bucket"):
         if col not in df.columns:
             df[col] = ""
 
@@ -487,6 +752,7 @@ def enrich_trace_metadata(df: pd.DataFrame) -> pd.DataFrame:
         df.at[idx, "region_bucket"] = infer_region_bucket(prompt_type, location)
         df.at[idx, "prompted_categories"] = extract_prompted_categories(query, category_type)
         df.at[idx, "web_search_performed"] = detect_web_search_performed(row)
+        df.at[idx, "web_search_detection_source"] = "heuristic"
 
     return df
 
@@ -606,8 +872,16 @@ with st.sidebar:
 
     if openai_key:
         os.environ["OPENAI_API_KEY"] = openai_key
+        try:
+            set_key(str(LOCAL_ENV_PATH), "OPENAI_API_KEY", openai_key)
+        except Exception:
+            pass
     if anthropic_key:
         os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+        try:
+            set_key(str(LOCAL_ENV_PATH), "ANTHROPIC_API_KEY", anthropic_key)
+        except Exception:
+            pass
 
     st.divider()
     st.subheader("Phoenix Enrichment (Optional)")
@@ -660,7 +934,9 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     df = load_csv(uploaded_file)
+    df = sync_web_search_alias_columns(df)
     df = enrich_trace_metadata(df)
+    df = sync_web_search_alias_columns(df)
 
     if phoenix_enrich and phoenix_base_url:
         with st.spinner("Resolving unknown web-search status from Phoenix API..."):
@@ -671,6 +947,7 @@ if uploaded_file is not None:
                     phoenix_api_key=phoenix_api_key,
                 )
             )
+            df = sync_web_search_alias_columns(df)
 
     st.success(f"Loaded **{len(df)} rows** from `{uploaded_file.name}`")
 
@@ -699,6 +976,7 @@ if uploaded_file is not None:
                             span_path_id=parsed_link["span_path_id"],
                             selected_span_id=parsed_link["selected_span_id"],
                             project_id_token=parsed_link["project_id_token"],
+                            project_id=parsed_link["project_id"],
                             api_key=phoenix_api_key,
                         )
                     )
@@ -788,6 +1066,7 @@ if uploaded_file is not None:
                     df.at[orig_idx, col] = evaluated_df.iloc[i][col]
 
         df = enrich_trace_metadata(df)
+        df = sync_web_search_alias_columns(df)
         if phoenix_enrich and phoenix_base_url:
             with st.spinner("Refreshing web-search metadata from Phoenix API..."):
                 df = asyncio.run(
@@ -797,6 +1076,7 @@ if uploaded_file is not None:
                         phoenix_api_key=phoenix_api_key,
                     )
                 )
+                df = sync_web_search_alias_columns(df)
         st.session_state["evaluated_df"] = df
         st.session_state["eval_complete"] = True
         st.rerun()
@@ -804,7 +1084,8 @@ if uploaded_file is not None:
 # ── Results Dashboard ────────────────────────────────────────────────────────
 
 if st.session_state.get("eval_complete") and "evaluated_df" in st.session_state:
-    df = st.session_state["evaluated_df"]
+    df = sync_web_search_alias_columns(st.session_state["evaluated_df"])
+    st.session_state["evaluated_df"] = df
 
     st.divider()
     st.header("Evaluation Results")
@@ -858,10 +1139,12 @@ if st.session_state.get("eval_complete") and "evaluated_df" in st.session_state:
     # ── Macro Trace Stats ────────────────────────────────────────────────────
     st.subheader("Macro Trace Stats")
 
-    macro_cols = st.columns(4)
+    macro_cols = st.columns(6)
     web_vals = df.get("web_search_performed", pd.Series(["UNKNOWN"] * len(df))).astype(str).str.upper()
     yes_web = (web_vals == "YES").sum()
     no_web = (web_vals == "NO").sum()
+    distance_only_web = (web_vals == "DISTANCE_ONLY").sum()
+    na_web = (web_vals == "N/A").sum()
     unknown_web = (web_vals == "UNKNOWN").sum()
 
     with macro_cols[0]:
@@ -869,10 +1152,72 @@ if st.session_state.get("eval_complete") and "evaluated_df" in st.session_state:
     with macro_cols[1]:
         st.metric("Traces Without Web Search", int(no_web))
     with macro_cols[2]:
-        st.metric("Unknown Web Search Status", int(unknown_web))
+        st.metric("Distance-Only Search", int(distance_only_web))
     with macro_cols[3]:
+        st.metric("No Search Component (N/A)", int(na_web))
+    with macro_cols[4]:
+        st.metric("Unknown Web Search Status", int(unknown_web))
+    with macro_cols[5]:
         pct_web = round((yes_web / len(df)) * 100, 1) if len(df) else 0.0
         st.metric("Web Search Rate", f"{pct_web}%")
+
+    source_vals = df.get("web_search_detection_source", pd.Series(["heuristic"] * len(df))).astype(str).str.lower()
+    api_resolved = int((source_vals == "phoenix_api").sum())
+    heuristic_resolved = int((source_vals == "heuristic").sum())
+    st.caption(
+        f"Web-search detection source: heuristic={heuristic_resolved}, "
+        f"phoenix_api={api_resolved}, unknown={int((source_vals == 'heuristic_unknown').sum())}"
+    )
+
+    st.markdown("**Review Sampling Planner**")
+    sample_col1, sample_col2, sample_col3 = st.columns(3)
+    with sample_col1:
+        population_estimate = st.number_input(
+            "Population size (total traces)",
+            min_value=1,
+            value=max(len(df), 1),
+            step=1,
+            help="Set this to the full trace count for your analysis window.",
+        )
+    with sample_col2:
+        confidence_level = st.selectbox(
+            "Confidence level",
+            options=[90, 95, 99],
+            index=0,
+        )
+    with sample_col3:
+        margin_error_pct = st.slider(
+            "Margin of error (%)",
+            min_value=3.0,
+            max_value=15.0,
+            value=8.0,
+            step=0.5,
+        )
+
+    target_reviews = calculate_sample_size(
+        population_size=int(population_estimate),
+        confidence_level=int(confidence_level),
+        margin_of_error=float(margin_error_pct) / 100.0,
+        proportion=0.5,
+    )
+    completed_reviews = count_completed_reviews(df)
+    remaining_reviews = max(target_reviews - completed_reviews, 0)
+    completion_pct = round((completed_reviews / target_reviews) * 100, 1) if target_reviews else 0.0
+
+    plan_cols = st.columns(4)
+    with plan_cols[0]:
+        st.metric("Target Reviews", int(target_reviews))
+    with plan_cols[1]:
+        st.metric("Completed Reviews", int(completed_reviews))
+    with plan_cols[2]:
+        st.metric("Remaining to Target", int(remaining_reviews))
+    with plan_cols[3]:
+        st.metric("Target Completion", f"{completion_pct}%")
+
+    st.caption(
+        "Finite-population estimate with conservative p=0.5. "
+        "For example, N=1000 at 90% confidence and ~8.0-8.5% margin lands near high-80s reviews."
+    )
 
     # Keystone vs Texas web search proportions.
     region_series = df.get("region_bucket", pd.Series(["unknown"] * len(df))).astype(str).str.lower()
@@ -1002,6 +1347,7 @@ if st.session_state.get("eval_complete") and "evaluated_df" in st.session_state:
         "prompt_type",
         "region_bucket",
         "web_search_performed",
+        "web_search_detection_source",
         "prompted_categories",
         "natural_language_query",
     ]
@@ -1038,6 +1384,7 @@ if st.session_state.get("eval_complete") and "evaluated_df" in st.session_state:
             st.markdown(f"**Output Type:** {output_type}")
             st.markdown(f"**Region Bucket:** {row.get('region_bucket', 'unknown')}")
             st.markdown(f"**Web Search Performed:** {row.get('web_search_performed', 'UNKNOWN')}")
+            st.markdown(f"**Web Search Detection Source:** {row.get('web_search_detection_source', 'heuristic')}")
             st.markdown(f"**Prompted Categories:** {row.get('prompted_categories', '') or 'N/A'}")
 
             st.divider()

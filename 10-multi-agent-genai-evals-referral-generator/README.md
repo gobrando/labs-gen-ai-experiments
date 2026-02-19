@@ -9,12 +9,16 @@ A multi-agent workflow application that evaluates the quality of GenAI outputs f
 - **Multiple LLM Providers**: Supports OpenAI and Anthropic models via LiteLLM
 - **Reasoning Columns**: Each score is paired with a text explanation of why the agent gave that score
 - **Trace Metadata Columns**: Adds `web_search_performed`, `prompted_categories`, and `region_bucket`
+- **Detection Provenance**: Tracks `web_search_detection_source` as `heuristic` vs `phoenix_api`
 - **Readability Metrics**: Automatic Flesch, Gunning Fog, SMOG, and Dale-Chall scores
 - **Streamlit Dashboard**: Interactive web UI with color-coded results, expandable row details
 - **Macro Analytics**: Keystone vs Texas web-search proportions, web-search rates, and top prompted categories
+- **Review Sampling Planner**: Calculates review target size by confidence level and margin of error
 - **Export Options**: Download results as CSV or formatted Excel with conditional formatting
 
 If your CSV does not include span payloads, enable **Phoenix Enrichment** in the sidebar and provide your Phoenix base URL to resolve `web_search_performed` from trace/span APIs.
+`web_search_performed` supports: `YES`, `NO`, `DISTANCE_ONLY`, `N/A`, and `UNKNOWN`.
+For sheet compatibility, downloads also include `web_search_used` as an alias of `web_search_performed`.
 
 ## Installation
 
@@ -110,6 +114,8 @@ The input CSV should contain these columns (from Phoenix export):
 | `full_output` | Yes | The GenAI-generated output to evaluate |
 | `location` | Recommended | Client's location for geographic checks |
 | `trace_id` | Recommended | Phoenix trace identifier |
+| `web_search_used` | Optional | Sheet-compatible alias for web-search status |
+| `web_search_detection_source` | Optional | Whether status came from heuristic or Phoenix API |
 
 ## Project Structure
 
