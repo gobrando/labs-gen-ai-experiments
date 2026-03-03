@@ -83,11 +83,19 @@ Keep gpt-5.1 with reasoning="none" for optimal performance:
 - `sample_production_queries.json` - 55 real production queries used in testing
 - `production_prompt_v48.txt` - Production prompt template (v48)
 
-**Output Files:**
-- `parameter_effect_test_output.txt` - Parameter testing console output
-- `temperature_test_output.txt` - Temperature testing output
-- `reasoning_level_output.txt` - Reasoning level testing output
-- Various `*_results.json` and `*_output.txt` files from individual test runs
+### Test Output Files (test_outputs/)
+
+**Detailed Test Results:** The `test_outputs/` directory contains raw console output from key test runs that provide valuable insights into model behavior:
+
+- `reasoning_comparison_no_temp_output.txt` - **Detailed reasoning level comparison** (37K) showing response times, web search usage, and resource counts across reasoning levels
+- `temperature_websearch_analysis_output.txt` - Temperature parameter impact on web search behavior (27K)
+- `temperature_test_results.txt` - Temperature parameter testing across multiple values (15K)
+- `gpt51_temperature_none_verification.txt` - GPT-5.1 temperature verification test results (8.5K)
+- `gpt52_temperature_verification.txt` - GPT-5.2 temperature verification test results (8.2K)
+- `production_temperature_results_gpt51.txt` - Production-scale temperature testing with GPT-5.1 (3.5K)
+- `production_temperature_results.txt` - Production-scale temperature testing baseline (3.4K)
+
+These files show actual test execution with SUCCESS/ERROR indicators, response times, web search detection, and detailed resource findings. They complement the summarized results in the JSON files and provide the raw data that informed the key findings.
 
 ### Supporting Files
 - `extracted_production_resources.txt` - Resources extracted from production traces
