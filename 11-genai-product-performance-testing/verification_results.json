@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-02-20T17:58:28.867895",
+  "accuracy": "3/5",
+  "results": [
+    {
+      "query": "household goods",
+      "expected_web_search": true,
+      "detected_web_search": true,
+      "match": true,
+      "web_search_queries": [
+        "household goods assistance Central Texas furniture bank",
+        "Austin TX free furniture household goods low income",
+        "Bell County TX household goods assistance"
+      ]
+    },
+    {
+      "query": "My client needs free furniture",
+      "expected_web_search": true,
+      "detected_web_search": true,
+      "match": true,
+      "web_search_queries": [
+        "free furniture assistance Austin TX",
+        "furniture bank Central Texas",
+        "Catholic Charities Central Texas furniture",
+        "free furniture Round Rock Texas"
+      ]
+    },
+    {
+      "query": "My client needs household goods",
+      "expected_web_search": true,
+      "detected_web_search": true,
+      "match": true,
+      "web_search_queries": [
+        "household goods assistance Central Texas furniture bank",
+        "Austin TX basic needs household items nonprofit",
+        "San Antonio TX household goods furniture assistance",
+        "Texas 211 basic needs household items"
+      ]
+    },
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter, Financial Assistance, Childcare",
+      "expected_web_search": false,
+      "detected_web_search": true,
+      "match": false,
+      "web_search_queries": [
+        "Central Texas housing shelter assistance Austin Travis County",
+        "Central Texas rental assistance utility assistance Austin",
+        "Central Texas childcare assistance programs Austin Travis County",
+        "Texas statewide social services directory 2-1-1"
+      ]
+    },
+    {
+      "query": "baby supplies",
+      "expected_web_search": false,
+      "detected_web_search": true,
+      "match": false,
+      "web_search_queries": [
+        "baby supplies assistance diapers formula WIC near Austin Texas",
+        "diaper bank Austin TX",
+        "baby items free or low cost Central Texas Catholic Charities",
+        "Austin TX baby supplies nonprofit \"baby boutique\""
+      ]
+    }
+  ]
+}

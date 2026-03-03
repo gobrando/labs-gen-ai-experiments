@@ -1,0 +1,25 @@
+{
+  "production_baseline_rate": 36.36363636363637,
+  "test_query_count": 30,
+  "results": {
+    "0.0": {
+      "web_search_count": 30,
+      "total_calls": 30,
+      "web_search_rate": 100.0,
+      "avg_latency": 18.499167609214783
+    },
+    "0.5": {
+      "web_search_count": 30,
+      "total_calls": 30,
+      "web_search_rate": 100.0,
+      "avg_latency": 457.6601739406586
+    },
+    "1.0": {
+      "web_search_count": 30,
+      "total_calls": 30,
+      "web_search_rate": 100.0,
+      "avg_latency": 14.89132657845815
+    }
+  },
+  "conclusion": "Temperature effect on web search invocation rate using real production queries"
+}

@@ -1,0 +1,552 @@
+================================================================================
+REASONING LEVEL COMPARISON TEST
+Testing: reasoning='low' vs reasoning='none'
+================================================================================
+Model: gpt-5.1
+Temperature: 0.25 (optimal from previous testing)
+Web Search: ENABLED
+Test prompts: 30
+================================================================================
+
+================================================================================
+Prompt 1/30: Single mother with 2 kids facing eviction in Austin, needs emergency housing ass...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 15.01s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: I Belong in Austin – City of Austin Emergency Rental Assistance, Salvation Army – Austin Shelter for Women and Children, Salvation Army – Rathgeber Center for Families...
+
+================================================================================
+Prompt 1/30: Single mother with 2 kids facing eviction in Austin, needs emergency housing ass...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 2/30: Homeless veteran in Travis County needs transitional housing and job training...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 10.52s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: VA Central Texas Health Care System – Homeless Veteran Care, HUD-VASH (HUD–VA Supportive Housing) via Housing Authority of the City of Austin, Caritas of Austin – Veterans Assistance (SSVF)...
+
+================================================================================
+Prompt 2/30: Homeless veteran in Travis County needs transitional housing and job training...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 3/30: Elderly couple on fixed income needs help with rising rent costs in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 20.57s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: I Belong in Austin – Emergency Rental Assistance (City of Austin), Area Agency on Aging of the Capital Area (AAACAP) – CAPCOG, Aging and Disability Resource Center of the Capital Area (ADRC-CAP)...
+
+================================================================================
+Prompt 3/30: Elderly couple on fixed income needs help with rising rent costs in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 4/30: Family escaping domestic violence needs emergency shelter in Central Texas...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.65s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Family Abuse Center, Family Crisis Center (Bastrop, Colorado, Fayette & Lee Counties), Families in Crisis, Inc....
+
+================================================================================
+Prompt 4/30: Family escaping domestic violence needs emergency shelter in Central Texas...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 5/30: Young adult aging out of foster care needs affordable housing options in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 48.90s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: LifeWorks Austin – Housing & After Care Transitional Services (ACTS), City of Austin – Affordable Housing Online Search Tool (AHOST), Ending Community Homelessness Coalition (ECHO) – Coordinated Entry & Youth Housing Referrals...
+
+================================================================================
+Prompt 5/30: Young adult aging out of foster care needs affordable housing options in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 6/30: Low-income family with 4 children needs food assistance in Austin, TX...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 18.98s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Central Texas Food Bank, Society of St. Vincent de Paul – Diocesan Council of Austin, Texas Health and Human Services – SNAP (Food Stamps)...
+
+================================================================================
+Prompt 6/30: Low-income family with 4 children needs food assistance in Austin, TX...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 7/30: Elderly person living alone needs home-delivered meals in Travis County...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.35s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Meals on Wheels Central Texas – Home Delivered Meals, Travis County Community Centers / Family Support Services, 2-1-1 Texas / United Way Helpline...
+
+================================================================================
+Prompt 7/30: Elderly person living alone needs home-delivered meals in Travis County...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 8/30: College student struggling with food insecurity needs food pantry locations near...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 14.20s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: UT Outpost (UT Austin On-Campus Food Pantry), Micah 6 Food Pantry, Central Texas Food Bank – Find Food Near You...
+
+================================================================================
+Prompt 8/30: College student struggling with food insecurity needs food pantry locations near...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 9/30: Undocumented immigrant family needs food assistance that doesn't require legal s...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 15.74s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Central Texas Food Bank – Find Food Now (Partner Pantries & Mobile Pantries), El Buen Samaritano Food Pantry, St. Ignatius Martyr Catholic Church – Food Pantry...
+
+================================================================================
+Prompt 9/30: Undocumented immigrant family needs food assistance that doesn't require legal s...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 10/30: Person with diabetes needs food assistance with dietary restrictions in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 13.71s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Central Texas Food Bank – Find Food & Nutrition Education, Meals on Wheels Central Texas – Medically Tailored Meals, Travis County Community Centers – Food Pantry Program...
+
+================================================================================
+Prompt 10/30: Person with diabetes needs food assistance with dietary restrictions in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 11/30: Unemployed single parent needs job training and childcare assistance in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 15.61s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Workforce Solutions Capital Area, Austin Community College (ACC) Career & Technical Education, Child Inc – Head Start and Early Head Start (Travis County)...
+
+================================================================================
+Prompt 11/30: Unemployed single parent needs job training and childcare assistance in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 12/30: Ex-offender needs employment programs for people with criminal records in Travis...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.78s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Travis County Reentry Resources (Start Your Next Chapter), Workforce Solutions Capital Area – Austin/Travis County Career Centers, Goodwill Central Texas – Job Training & Career Center...
+
+================================================================================
+Prompt 12/30: Ex-offender needs employment programs for people with criminal records in Travis...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 13/30: Person with disability needs supported employment services in Central Texas...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 14.95s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Texas Workforce Commission – Vocational Rehabilitation Services (Central Texas Region), Workforce Solutions of Central Texas – Individuals with Disabilities / TWS-VRS Partner, Easterseals Lonestar – Employment & Training (formerly Easterseals Central Texas)...
+
+================================================================================
+Prompt 13/30: Person with disability needs supported employment services in Central Texas...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 14/30: Recent immigrant needs ESL classes and job placement assistance in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 16.25s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Austin Community College ESOL (English for Speakers of Other Languages), Austin Community College Continuing Education ESOL, Austin ISD Adult Education & Literacy (AEL) – ESL...
+
+================================================================================
+Prompt 14/30: Recent immigrant needs ESL classes and job placement assistance in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 15/30: Teenager needs summer job opportunities and youth employment programs...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 14.06s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Travis County / City of Austin Summer Youth Employment Program (SYEP), City of Austin Youth Employment and Program Opportunities, Austin Youth Initiatives – High School Summer Internship Program...
+
+================================================================================
+Prompt 15/30: Teenager needs summer job opportunities and youth employment programs...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 16/30: Uninsured family needs low-cost healthcare clinic in Austin, TX...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.92s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: People’s Community Clinic, CommUnityCare Health Centers – South Austin Health Center, CommUnityCare Health Centers – North Central Health Center...
+
+================================================================================
+Prompt 16/30: Uninsured family needs low-cost healthcare clinic in Austin, TX...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 17/30: Person experiencing depression needs free or sliding-scale mental health counsel...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 14.01s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Integral Care (Travis County Local Mental Health Authority), NAMI Central Texas, Texas Health and Human Services – Local Mental Health Authority Finder...
+
+================================================================================
+Prompt 17/30: Person experiencing depression needs free or sliding-scale mental health counsel...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 18/30: Senior citizen needs help navigating Medicare and prescription drug costs...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 17.58s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Area Agency on Aging of Central Texas (AAACT), Central Texas Aging, Disability & Veterans Resource Center (CTADVRC), Texas Health Information, Counseling and Advocacy Program (HICAP/SHIP)...
+
+================================================================================
+Prompt 18/30: Senior citizen needs help navigating Medicare and prescription drug costs...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 19/30: Pregnant woman without insurance needs prenatal care in Travis County...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 11.26s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Central Health Medical Access Program (MAP), CommUnityCare Health Centers – Women’s Health & Prenatal Care, People’s Community Clinic – Center for Women’s Health...
+
+================================================================================
+Prompt 19/30: Pregnant woman without insurance needs prenatal care in Travis County...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 20/30: Person with substance abuse issues needs addiction treatment programs in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 10.91s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Integral Care – Narcotic Treatment Program, Austin Drug and Alcohol Abuse Program (ADAAP), Infinite Recovery – Austin Drug & Alcohol Rehab...
+
+================================================================================
+Prompt 20/30: Person with substance abuse issues needs addiction treatment programs in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 21/30: Working parent needs affordable childcare for toddler and preschooler in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.29s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Workforce Solutions Capital Area – Child Care Services (CCS), Raising Travis County (via Workforce Solutions Capital Area CCS), Austin ISD Head Start Pre-K3 Program...
+
+================================================================================
+Prompt 21/30: Working parent needs affordable childcare for toddler and preschooler in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 22/30: Family needs after-school programs for elementary school children in East Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.27s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Austin ISD Prime Time Out-of-School Enrichment, ACE Austin (21st Century Community Learning Centers), Third Base After-School Care Program – Austin ISD...
+
+================================================================================
+Prompt 22/30: Family needs after-school programs for elementary school children in East Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 23/30: Low-income family needs Head Start or Pre-K programs for 3-year-old...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 13.13s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Texas Head Start / Early Head Start Locator, Austin ISD Head Start Pre-K3 Program, Austin ISD Pre-K3 (Free and Tuition-Based)...
+
+================================================================================
+Prompt 23/30: Low-income family needs Head Start or Pre-K programs for 3-year-old...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 24/30: Parent needs tutoring services for child struggling in school...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 12.16s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: VICTORY Tutorial Program – Austin ISD, ACE Austin – Austin ISD Expanded Learning, Communities In Schools of Central Texas...
+
+================================================================================
+Prompt 24/30: Parent needs tutoring services for child struggling in school...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 25/30: Family needs summer camp programs with financial assistance in Travis County...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 11.99s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Austin Parks and Recreation – Summer Camps & Financial Aid, Boys & Girls Clubs of the Austin Area – Summer Programs, Austin ISD Summer Learning & Camp Heatwave (Third Base)...
+
+================================================================================
+Prompt 25/30: Family needs summer camp programs with financial assistance in Travis County...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 26/30: Person recently laid off needs help applying for unemployment benefits in Texas...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 14.24s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Texas Workforce Commission – Unemployment Benefits, Workforce Solutions Capital Area (Austin/Travis County), Workforce Solutions Rural Capital Area...
+
+================================================================================
+Prompt 26/30: Person recently laid off needs help applying for unemployment benefits in Texas...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 27/30: Immigrant family needs help applying for SNAP and Medicaid benefits...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 11.51s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Central Texas Food Bank – SNAP & State Benefits Assistance, Your Texas Benefits – Texas Health and Human Services, Texas Health and Human Services – Local Benefits Offices Finder...
+
+================================================================================
+Prompt 27/30: Immigrant family needs help applying for SNAP and Medicaid benefits...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 28/30: Senior citizen needs help with Social Security disability application...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 11.61s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: Area Agency on Aging of the Capital Area (AAACAP), Area Agency on Aging of Central Texas (AAACT), Texas Legal Services Center – Health Information, Counseling, and Advocacy Program (HICAP)...
+
+================================================================================
+Prompt 28/30: Senior citizen needs help with Social Security disability application...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 29/30: Person facing wage theft needs legal aid services in Austin...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 120.97s
+📊 Resources found: 7
+🔍 Likely used web search: YES
+📝 Resources: Texas RioGrande Legal Aid – Austin Office (TRLA), Workers Defense Project – Austin, City of Austin Wage Theft Program...
+
+================================================================================
+Prompt 29/30: Person facing wage theft needs legal aid services in Austin...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+Prompt 30/30: Low-income family needs help with tax preparation and EITC...
+Reasoning: none
+================================================================================
+✅ SUCCESS!
+⏱️  Response time: 13.91s
+📊 Resources found: 6
+🔍 Likely used web search: YES
+📝 Resources: United Way of Central Texas – VITA Free Tax Preparation, Foundation Communities – Prosper Tax Help (Austin & Central Texas), 2-1-1 Texas / United Way of Central Texas HELPLINE...
+
+================================================================================
+Prompt 30/30: Low-income family needs help with tax preparation and EITC...
+Reasoning: low
+================================================================================
+❌ ERROR: Error code: 400 - {'error': {'message': "Unsupported parameter: 'temperature' is not supported with this model.", 'type': 'invalid_request_error', 'pa
+
+================================================================================
+ANALYSIS: Reasoning Level Comparison
+================================================================================
+
+📊 REASONING='NONE' (Current Production Config):
+  Success rate: 30/30 (100.0%)
+  Avg latency: 18.57s
+  Avg resources per query: 6.6
+  Web search usage: 30/30 (100.0%)
+
+📊 REASONING='LOW':
+  Success rate: 0/30 (0.0%)
+  Avg latency: 0.00s
+  Avg resources per query: 0.0
+  Web search usage: 0/0 (0.0%)
+
+🔍 COMPARISON:
+  Latency impact: -18.57s (-100.0%)
+  Web search usage difference: -100.0pp
+    reasoning='none': 100.0%
+    reasoning='low': 0.0%
+  Avg resources difference: -6.6
+
+================================================================================
+KEY FINDINGS:
+================================================================================
+❌ reasoning='low' does NOT increase web search usage
+   No significant difference in web search detection
+
+✅ reasoning='low' has minimal latency impact (+-100.0%)
+
+================================================================================
+RECOMMENDATIONS:
+================================================================================
+⚠️  RECOMMENDATION: Stay with reasoning='none'
+   - No significant web search increase with reasoning='low'
+   - Current config maintains speed with temperature control
+
+================================================================================
+NEXT STEPS:
+================================================================================
+1. Review trace data in observability platform for accurate web search counts
+   - Look for 'OpenAIWebSearch' spans
+   - Check for 'web_search_...' child spans (0.10ms in traces)
+2. Manually review sample outputs to compare quality
+3. Test with real users if web search improvement is significant
+================================================================================
+
+💾 Detailed results saved to: reasoning_level_comparison_results.json
+
+================================================================================
+IMPORTANT NOTE:
+================================================================================
+⚠️  This test uses HEURISTICS to detect web search usage (looking for
+   indicators in the response text). For ACCURATE web search counts,
+   you MUST check the trace spans in your observability platform.
+   
+   Look for:
+   - 'OpenAIWebSearch' component spans
+   - 'web_search_...' child spans (highlighted in your screenshot)
+   - 'websearch' tokens in span/event/tool payloads
+================================================================================

@@ -1,0 +1,186 @@
+{
+  "id": "resp_0603bb3a2251944c006998dcaffcb081908d38cb75c6b88bb4",
+  "created_at": 1771625648.0,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "metadata": {},
+  "model": "gpt-5.1-2025-11-13",
+  "object": "response",
+  "output": [
+    {
+      "id": "ws_0603bb3a2251944c006998dcb0f31081908244063ffd8a2c7a",
+      "action": {
+        "query": "Austin TX free household goods furniture bank",
+        "type": "search",
+        "queries": [
+          "Austin TX free household goods furniture bank",
+          "Central Texas basic needs assistance household items"
+        ],
+        "sources": null
+      },
+      "status": "completed",
+      "type": "web_search_call"
+    },
+    {
+      "id": "msg_0603bb3a2251944c006998dcb241848190ab86c67916f4bcbe",
+      "content": [
+        {
+          "annotations": [
+            {
+              "end_index": 629,
+              "start_index": 557,
+              "title": "Community Resources \u2014 WHPC",
+              "type": "url_citation",
+              "url": "https://www.whpc.org/community-resources?utm_source=openai"
+            },
+            {
+              "end_index": 918,
+              "start_index": 813,
+              "title": "Goods Donation - Goodwill Central Texas",
+              "type": "url_citation",
+              "url": "https://www.goodwillcentraltexas.org/donate/donate-goods/?utm_source=openai"
+            },
+            {
+              "end_index": 1193,
+              "start_index": 1101,
+              "title": "Austin Habitat for Humanity | Habitat for Humanity",
+              "type": "url_citation",
+              "url": "https://www.habitat.org/tx/austin/austin-habitat-humanity?utm_source=openai"
+            },
+            {
+              "end_index": 1544,
+              "start_index": 1446,
+              "title": "Supplies List - Family Crisis Center",
+              "type": "url_citation",
+              "url": "https://www.family-crisis-center.org/supplies-list?utm_source=openai"
+            },
+            {
+              "end_index": 1883,
+              "start_index": 1760,
+              "title": "TRANSITIONAL LIVING PROGRAM | ctysb",
+              "type": "url_citation",
+              "url": "https://www.centraltexasyouthservices.com/copy-of-maternity-group-home?utm_source=openai"
+            },
+            {
+              "end_index": 2152,
+              "start_index": 2080,
+              "title": "Community Resources \u2014 WHPC",
+              "type": "url_citation",
+              "url": "https://www.whpc.org/community-resources?utm_source=openai"
+            },
+            {
+              "end_index": 2541,
+              "start_index": 2436,
+              "title": "Goods Donation - Goodwill Central Texas",
+              "type": "url_citation",
+              "url": "https://www.goodwillcentraltexas.org/donate/donate-goods/?utm_source=openai"
+            },
+            {
+              "end_index": 2794,
+              "start_index": 2702,
+              "title": "Austin Habitat for Humanity | Habitat for Humanity",
+              "type": "url_citation",
+              "url": "https://www.habitat.org/tx/austin/austin-habitat-humanity?utm_source=openai"
+            },
+            {
+              "end_index": 3009,
+              "start_index": 2937,
+              "title": "Community Resources \u2014 WHPC",
+              "type": "url_citation",
+              "url": "https://www.whpc.org/community-resources?utm_source=openai"
+            },
+            {
+              "end_index": 3279,
+              "start_index": 3181,
+              "title": "Supplies List - Family Crisis Center",
+              "type": "url_citation",
+              "url": "https://www.family-crisis-center.org/supplies-list?utm_source=openai"
+            },
+            {
+              "end_index": 3538,
+              "start_index": 3463,
+              "title": "Clothing and Housewares Curbside Collection | AustinTexas.gov",
+              "type": "url_citation",
+              "url": "https://www.austintexas.gov/clothing?utm_source=openai"
+            },
+            {
+              "end_index": 3862,
+              "start_index": 3732,
+              "title": "Where to Donate Household Items | ABC Austin",
+              "type": "url_citation",
+              "url": "https://blog.abchomeandcommercial.com/where-to-donate-household-items-austin/?utm_source=openai"
+            }
+          ],
+          "text": "Are you looking to GET free/low-cost household goods, or to DONATE them?\n\nHere are options either way in Central Texas (Austin area). If you tell me your city/ZIP and whether you\u2019re seeking help or donating, I can narrow this down.\n\n---\n\n## If you NEED household goods\n\nThese can help with basic items like dishes, linens, small appliances, sometimes furniture:\n\n1. **St. Vincent de Paul Society (Austin area)**\n   - Helps families with home goods; some conferences can help with furniture and household items.\n   - Phone for central line: **512-251-6995** ([whpc.org](https://www.whpc.org/community-resources?utm_source=openai))  \n\n2. **Goodwill Central Texas \u2013 low-cost household items**\n   - Stores around Austin with inexpensive used **household items, kitchenware, linens, small appliances, and furniture**. ([goodwillcentraltexas.org](https://www.goodwillcentraltexas.org/donate/donate-goods/?utm_source=openai))  \n\n3. **Habitat for Humanity ReStore (Austin, NW Austin, San Marcos)**\n   - Discount **furniture, appliances, home accessories, building materials**. Often much cheaper than retail. ([habitat.org](https://www.habitat.org/tx/austin/austin-habitat-humanity?utm_source=openai))  \n\n4. **Family Crisis Center (Bastrop, Colorado, Fayette, Lee Counties)**\n   - For people fleeing domestic violence/sexual assault; can help with **toiletries, household necessities, baby items** and sometimes other basics when in shelter or programs. ([family-crisis-center.org](https://www.family-crisis-center.org/supplies-list?utm_source=openai))  \n\n5. **Transitional/Supportive Housing Programs**\n   - Some youth/family programs provide **fully furnished apartments with basic household items (towels, dishes, etc.), which you can usually keep when you exit**. ([centraltexasyouthservices.com](https://www.centraltexasyouthservices.com/copy-of-maternity-group-home?utm_source=openai))  \n\n6. **2\u20111\u20111 Texas / United Way**\n   - Call **2\u20111\u20111** and ask for agencies in your ZIP that help with **household items or furniture**. They maintain the most up\u2011to\u2011date, location\u2011specific list. ([whpc.org](https://www.whpc.org/community-resources?utm_source=openai))  \n\n---\n\n## If you want to DONATE household goods\n\n1. **Goodwill Central Texas**\n   - Accepts **furniture in good condition, household items, kitchen items, linens, toys, etc.** Many drop\u2011off sites; some options for curbside pickup in Austin via Austin Resource Recovery partnership. ([goodwillcentraltexas.org](https://www.goodwillcentraltexas.org/donate/donate-goods/?utm_source=openai))  \n\n2. **Habitat for Humanity ReStore**\n   - Takes **furniture, appliances, building materials, and home accessories**; resells them to fund affordable housing. ([habitat.org](https://www.habitat.org/tx/austin/austin-habitat-humanity?utm_source=openai))  \n\n3. **St. Vincent de Paul Thrift Stores (Austin area)**\n   - Accept **home goods, furniture, household items** to support families in need. ([whpc.org](https://www.whpc.org/community-resources?utm_source=openai))  \n\n4. **Family Crisis Center (Bastrop region)**\n   - Needs **new household necessities**: towels, sheets, dish soap, laundry detergent, cleaning supplies, pots/pans, etc. ([family-crisis-center.org](https://www.family-crisis-center.org/supplies-list?utm_source=openai))  \n\n5. **Austin Resource Recovery + Goodwill curbside program (City of Austin customers)**\n   - Free scheduled pickup for **clothing and housewares** for reuse/recycling at your curb. ([austintexas.gov](https://www.austintexas.gov/clothing?utm_source=openai))  \n\n6. **Other local charities in Austin**\n   - Examples: **Caritas of Austin, SAFE Alliance, Salvation Army**, and others accept many types of household items; some offer pickup for furniture. ([blog.abchomeandcommercial.com](https://blog.abchomeandcommercial.com/where-to-donate-household-items-austin/?utm_source=openai))  \n\n---\n\nIf you reply with:\n- your **city or ZIP**, and  \n- whether you want to **get** items or **donate** them (and if you have/need furniture vs. smaller goods),\n\nI can give you a short, specific list of the best places and exactly how to contact them.",
+          "type": "output_text",
+          "logprobs": []
+        }
+      ],
+      "role": "assistant",
+      "status": "completed",
+      "type": "message"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "temperature": 0.9,
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "web_search",
+      "filters": null,
+      "search_context_size": "medium",
+      "user_location": {
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null,
+        "type": "approximate"
+      }
+    }
+  ],
+  "top_p": 1.0,
+  "background": false,
+  "completed_at": 1771625660.0,
+  "conversation": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": "none",
+    "generate_summary": null,
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "status": "completed",
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "top_logprobs": 0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 10525,
+    "input_tokens_details": {
+      "cached_tokens": 4352
+    },
+    "output_tokens": 931,
+    "output_tokens_details": {
+      "reasoning_tokens": 47
+    },
+    "total_tokens": 11456
+  },
+  "user": null,
+  "billing": {
+    "payer": "developer"
+  },
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "store": true
+}

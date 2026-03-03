@@ -1,0 +1,19 @@
+{
+  "production_baseline_rate": 36.36363636363637,
+  "test_query_count": 30,
+  "results": {
+    "none": {
+      "web_search_count": 30,
+      "total_calls": 30,
+      "web_search_rate": 100.0,
+      "avg_latency": 21.653942505518597
+    },
+    "low": {
+      "web_search_count": 27,
+      "total_calls": 30,
+      "web_search_rate": 90.0,
+      "avg_latency": 379.97207760016124
+    }
+  },
+  "conclusion": "Reasoning level effect on web search invocation rate using real production queries"
+}

@@ -1,0 +1,14 @@
+{
+  "production_baseline": 36.36363636363637,
+  "test_web_search_rate": 96.36363636363636,
+  "difference": 59.99999999999999,
+  "match_rate": 32.72727272727273,
+  "total_queries": 55,
+  "avg_latency": 26.372054828297006,
+  "config": {
+    "model": "gpt-5.1",
+    "reasoning_effort": "none",
+    "prompt_version": 48,
+    "note": "Simplified - missing database-injected resources"
+  }
+}

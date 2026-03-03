@@ -1,0 +1,128 @@
+Loaded 55 real production queries
+Production baseline web search rate: 36.4%
+
+Testing with 30 queries
+
+================================================================================
+CORRECTED REASONING LEVEL vs WEB SEARCH TEST
+================================================================================
+Testing with REAL production queries
+Production baseline: 36.4% web search rate
+
+
+================================================================================
+TESTING REASONING: none
+================================================================================
+   1.    NO |  20.04s | household goods
+   2.    NO | 4230.16s | My client needs free furniture
+   3.    NO |  35.38s | My client needs household goods
+   4.    NO |  31.33s | lvn training
+Focus on resources close to the following locat
+   5.    NO |  13.56s | clothes for job interviews
+   6.    NO |  29.45s | My client is a 30 year old male who speaks Arabic and limite
+   7.    NO |  23.49s | free vision test for needy clients
+   8.    NO |  27.06s | My client needs assistance with buying a computer or laptop
+
+   9.    NO |  37.90s | My client needs assistance with buying a computer or laptop
+
+  10.    NO |  39.62s | My client needs assistance with buying a computer or laptop
+
+  11.    NO |  16.26s | My client needs financial assistance to buy a computer
+
+Incl
+  12.    NO |  17.82s | client needs housing resources, food assistance, legal assis
+  13.    NO |   4.44s | client is seeking enrollment assistance for SNAP application
+  14.    NO |  23.33s | Free furniture for newly housed client 
+Focus on resources c
+  15.    NO |  17.37s | My client is seeking a part time job in customer services re
+  16.    NO |  18.46s | SNAP benefits application help
+Focus on resources close to t
+  17.    NO |  11.83s | What CAT classes are currently offered at the Goodwill Commu
+  18.    NO |  31.80s | Include resources that support the following categories: Hou
+  19.    NO |  11.01s | Interview trainings
+  20.    NO |   6.26s | ACC medical assistant programs
+  21.    NO |  22.87s | Include resources that support the following categories: Hou
+  22.    NO |  10.36s | baby supplies
+  23.    NO |  14.37s | free household goods
+  24.    NO |  20.06s | My client needs household goods
+  25.    NO |  13.56s | My client needs home goods
+  26.    NO |  15.44s | low cost childcare
+Focus on resources close to the following
+  27.    NO |  19.70s | Include resources that support the following categories: Sub
+  28.    NO |   7.31s | clothes for job interviews
+  29.    NO |   9.75s | phlebotomy training
+  30.    NO |   8.36s | Medical assistant training at community college
+
+  Web search rate: 0.0% (0/30)
+  Avg latency: 159.61s
+
+================================================================================
+TESTING REASONING: low
+================================================================================
+   1.    NO |  14.84s | household goods
+   2.    NO |  20.88s | My client needs free furniture
+   3.    NO |  16.48s | My client needs household goods
+   4.    NO |  20.27s | lvn training
+Focus on resources close to the following locat
+   5.    NO |  14.44s | clothes for job interviews
+   6.    NO |  28.46s | My client is a 30 year old male who speaks Arabic and limite
+   7.    NO |   9.64s | free vision test for needy clients
+   8.    NO |  41.99s | My client needs assistance with buying a computer or laptop
+
+   9.    NO |  43.98s | My client needs assistance with buying a computer or laptop
+
+  10.    NO |  37.35s | My client needs assistance with buying a computer or laptop
+
+  11.    NO |  44.64s | My client needs financial assistance to buy a computer
+
+Incl
+  12.    NO |  19.07s | client needs housing resources, food assistance, legal assis
+  13.    NO |  11.78s | client is seeking enrollment assistance for SNAP application
+  14.    NO |  22.72s | Free furniture for newly housed client 
+Focus on resources c
+  15.    NO |  18.17s | My client is seeking a part time job in customer services re
+  16.    NO |  12.23s | SNAP benefits application help
+Focus on resources close to t
+  17.    NO |  16.70s | What CAT classes are currently offered at the Goodwill Commu
+  18.    NO |  32.94s | Include resources that support the following categories: Hou
+  19.    NO |  12.21s | Interview trainings
+  20.    NO |  11.10s | ACC medical assistant programs
+  21.    NO |  28.52s | Include resources that support the following categories: Hou
+  22.    NO |  12.92s | baby supplies
+  23.    NO |  14.67s | free household goods
+  24.    NO |  13.82s | My client needs household goods
+  25.    NO |  13.33s | My client needs home goods
+  26.    NO |  22.98s | low cost childcare
+Focus on resources close to the following
+  27.    NO |  21.49s | Include resources that support the following categories: Sub
+  28.    NO |  11.93s | clothes for job interviews
+  29.    NO |  18.14s | phlebotomy training
+  30.    NO |  16.46s | Medical assistant training at community college
+
+  Web search rate: 0.0% (0/30)
+  Avg latency: 20.80s
+
+================================================================================
+CORRECTED TEST RESULTS SUMMARY
+================================================================================
+
+Production baseline: 36.4% web search rate
+Total queries tested per reasoning level: 30
+
+Results by reasoning level:
+
+  Reasoning 'none':
+    Web search rate:   0.0% (0/30)
+    Difference from baseline: -36.4 percentage points
+    Avg latency: 159.61s
+
+  Reasoning 'low':
+    Web search rate:   0.0% (0/30)
+    Difference from baseline: -36.4 percentage points
+    Avg latency: 20.80s
+
+Latency impact of reasoning='low':
+  +-138.81s (-87.0%)
+
+✅ Results saved to: corrected_reasoning_test_results.json
+================================================================================

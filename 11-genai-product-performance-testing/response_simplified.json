@@ -1,0 +1,137 @@
+{
+  "id": "resp_00c1eba1701987c6006998dc9e59f4819682b0d3d6e3e0b1d3",
+  "created_at": 1771625630.0,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": null,
+  "metadata": {},
+  "model": "gpt-5.1-2025-11-13",
+  "object": "response",
+  "output": [
+    {
+      "id": "ws_00c1eba1701987c6006998dca2b2b48196938bc42ad7567805",
+      "action": {
+        "query": "Central Texas furniture bank Austin",
+        "type": "search",
+        "queries": [
+          "Central Texas furniture bank Austin",
+          "Austin TX free household goods basic needs"
+        ],
+        "sources": null
+      },
+      "status": "completed",
+      "type": "web_search_call"
+    },
+    {
+      "id": "msg_00c1eba1701987c6006998dca420108196a952820f4b482691",
+      "content": [
+        {
+          "annotations": [
+            {
+              "end_index": 603,
+              "start_index": 462,
+              "title": "AUSTIN FURNITURE BANK - Organization - Idealist",
+              "type": "url_citation",
+              "url": "https://www.idealist.org/en/nonprofit/35101437bea14489ab69f109520fcbe2-austin-furniture-bank-pflugerville?utm_source=openai"
+            },
+            {
+              "end_index": 1064,
+              "start_index": 992,
+              "title": "Community Resources \u2014 WHPC",
+              "type": "url_citation",
+              "url": "https://www.whpc.org/community-resources?utm_source=openai"
+            },
+            {
+              "end_index": 1363,
+              "start_index": 1270,
+              "title": "Central - Texas Division",
+              "type": "url_citation",
+              "url": "https://salvationarmytexas.org/texas/central-1/?utm_source=openai"
+            },
+            {
+              "end_index": 1952,
+              "start_index": 1875,
+              "title": "MoveOutATX | AustinTexas.gov",
+              "type": "url_citation",
+              "url": "https://www.austintexas.gov/moveoutatx?utm_source=openai"
+            },
+            {
+              "end_index": 2434,
+              "start_index": 2362,
+              "title": "Community Resources \u2014 WHPC",
+              "type": "url_citation",
+              "url": "https://www.whpc.org/community-resources?utm_source=openai"
+            }
+          ],
+          "text": "Here are key **household goods resources in Central Texas** (assuming Austin/Travis County; if you\u2019re in another county, tell me which one and I\u2019ll localize):\n\n---\n\n## 1. Furniture & Basic Household Items\n\n**Austin Furniture Bank (Pflugerville)**  \n- Helps households exiting homelessness or crisis get **beds, tables, chairs, dressers, kitchen basics, etc.**  \n- Typically works **by referral from partner agencies** (shelters, case management programs, etc.). ([idealist.org](https://www.idealist.org/en/nonprofit/35101437bea14489ab69f109520fcbe2-austin-furniture-bank-pflugerville?utm_source=openai))  \n- As a case worker, you can:  \n  - Check if your agency is a partner, or  \n  - Contact them to set up referral access.\n\n**Society of St. Vincent de Paul \u2013 Home Goods**  \n- Can often help with **furniture and household goods** for low\u2011income families.  \n- Also takes donations and offers **free pickup for furniture**, which can sometimes be redirected to clients via local conferences. ([whpc.org](https://www.whpc.org/community-resources?utm_source=openai))  \n\n**Salvation Army \u2013 Central Texas Locations**  \n- Thrift stores and assistance programs that may provide **vouchers** for clothing, small household items, and sometimes furniture for qualifying clients. ([salvationarmytexas.org](https://salvationarmytexas.org/texas/central-1/?utm_source=openai))  \n\n---\n\n## 2. Small Housewares & Linens (cheap/free)\n\n**Goodwill Central Texas & Local Thrift Stores**  \n- Low\u2011cost **kitchen items, linens, small appliances, d\u00e9cor**.  \n- For clients with very limited income, pair with a **church/agency gift card** or a **small flexible fund** if your program has one.\n\n**City of Austin/MoveOutATX Free Furniture Market (Seasonal)**  \n- When in season (summer), offers **free gently used furniture and household goods** collected from UT students; \u201cfirst\u2011come, first\u2011served.\u201d ([austintexas.gov](https://www.austintexas.gov/moveoutatx?utm_source=openai))  \n- Good for clients who can transport items and are stable in housing.\n\n---\n\n## 3. General Connection to Local Resources\n\n**2\u20111\u20111 Texas**  \n- Call **2\u20111\u20111** or go to the website to search for:  \n  - \u201cFurniture\u201d  \n  - \u201cHousehold goods\u201d  \n  - \u201cThrift store assistance\u201d  \n- Can locate **smaller church\u2011based and neighborhood programs** that provide starter kits (dishes, towels, bedding, etc.) near the client. ([whpc.org](https://www.whpc.org/community-resources?utm_source=openai))  \n\n---\n\n## 4. Caseworker Tips\n\nWhen you contact these programs, have ready:  \n- Client\u2019s **ZIP code** and county  \n- Basic **household size, income source, and situation** (e.g., fleeing DV, exiting shelter, new Section 8 lease)  \n- **Move\u2011in date** and what they *specifically* need (e.g., bed + mattress, pots/pans, dishes, towels)  \n- Whether the client has **transportation** or needs **delivery**.\n\n---\n\nIf you tell me:\n- Client\u2019s **city and ZIP**,  \n- Whether they have **kids**,  \n- And if they have a **car or truck**,  \n\nI can narrow this to a short, concrete referral list with phone numbers and intake notes you can drop directly into a case plan.",
+          "type": "output_text",
+          "logprobs": []
+        }
+      ],
+      "role": "assistant",
+      "status": "completed",
+      "type": "message"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "temperature": 0.9,
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "web_search",
+      "filters": null,
+      "search_context_size": "medium",
+      "user_location": {
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null,
+        "type": "approximate"
+      }
+    }
+  ],
+  "top_p": 1.0,
+  "background": false,
+  "completed_at": 1771625647.0,
+  "conversation": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": "none",
+    "generate_summary": null,
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "status": "completed",
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "top_logprobs": 0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 10473,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 756,
+    "output_tokens_details": {
+      "reasoning_tokens": 45
+    },
+    "total_tokens": 11229
+  },
+  "user": null,
+  "billing": {
+    "payer": "developer"
+  },
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "store": true
+}

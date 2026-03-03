@@ -1,0 +1,286 @@
+{
+  "web_search_queries": [
+    {
+      "query": "household goods",
+      "trace_id": "9bc1fe9880d28a79ecfed935d7dc3c70",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs free furniture",
+      "trace_id": "1c9642e43f08a24b37c6b38b6e040c43",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs household goods",
+      "trace_id": "0d568e439656858b214acb27cab92d6b",
+      "used_web_search": true
+    },
+    {
+      "query": "lvn training\nFocus on resources close to the following location: austin",
+      "trace_id": "d633ea2125f14934008cdf82b449550e",
+      "used_web_search": true
+    },
+    {
+      "query": "clothes for job interviews",
+      "trace_id": "0b8df6e5381f219c21e03ff0216282b8",
+      "used_web_search": true
+    },
+    {
+      "query": "My client is a 30 year old male who speaks Arabic and limited French.  He is looking for social groups that are from his native country, Algeria, and who speak either language in the Austin Texas area\nInclude the following types of providers: community\nFocus on resources close to the following location: Austin, Texas",
+      "trace_id": "be673875882277157e851a5f4dc22445",
+      "used_web_search": true
+    },
+    {
+      "query": "free vision test for needy clients",
+      "trace_id": "3921b6d35a1a62a278fb82883b8c1982",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs assistance with buying a computer or laptop\nInclude resources that support the following categories: Financial Assistance\nInclude the following types of providers: government, community, goodwill\nFocus on resources close to the following location: Buda (Hays county), TX 78610",
+      "trace_id": "a0691da31a24341a4f71f4dd6c76f652",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs assistance with buying a computer or laptop\nInclude resources that support the following categories: Financial Assistance, Education & GED\nInclude the following types of providers: government, community, goodwill\nFocus on resources close to the following location: Buda (Hays county), TX 78610",
+      "trace_id": "cd54463e4afdec315aece9d633746876",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs assistance with buying a computer or laptop\nInclude resources that support the following categories: Financial Assistance\nInclude the following types of providers: government, community, goodwill\nFocus on resources close to the following location: Buda (Hays county), TX 78610",
+      "trace_id": "ce61d989968af58b77fe1f43f9cc49f6",
+      "used_web_search": true
+    },
+    {
+      "query": "My client needs financial assistance to buy a computer\n\nInclude resources that support the following categories: Financial Assistance, Education & GED\nInclude the following types of providers: government, community, goodwill\nFocus on resources close to the following location: Buda (Hays county), TX 78610",
+      "trace_id": "cb87ab76aec02fedb88a387643f09d9a",
+      "used_web_search": true
+    },
+    {
+      "query": "client needs housing resources, food assistance, legal assistance, and diapers",
+      "trace_id": "ad49ba11703f237383fba8ddcab78fd7",
+      "used_web_search": true
+    },
+    {
+      "query": "client is seeking enrollment assistance for SNAP applications in austin",
+      "trace_id": "3f83f4a2b542a06cf1e4def96f69eafc",
+      "used_web_search": true
+    },
+    {
+      "query": "Free furniture for newly housed client \nFocus on resources close to the following location: Hutto (Williamson county), TX 78634",
+      "trace_id": "8ed3c8e3534ba263651bae65d3c5b5e0",
+      "used_web_search": true
+    },
+    {
+      "query": "My client is seeking a part time job in customer services retail\nInclude resources that support the following categories: Employment & Job Training\nFocus on resources close to the following location: Georgetown (Williamson county), TX 78626",
+      "trace_id": "8a7e6687209df15fef1449dac7740ac0",
+      "used_web_search": true
+    },
+    {
+      "query": "SNAP benefits application help\nFocus on resources close to the following location: Hays County",
+      "trace_id": "cb70eefa408bf047c6f20755ca12dac9",
+      "used_web_search": true
+    },
+    {
+      "query": "What CAT classes are currently offered at the Goodwill Community Center? Client needs short-term training before starting full GCTA program.\nFocus on resources close to the following location: in Williamson County",
+      "trace_id": "71b11763da43c3f95d8f1aa2ba3c95b0",
+      "used_web_search": true
+    },
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter",
+      "trace_id": "6cfdfa310ec5e5a497b5ad7f856e84c1",
+      "used_web_search": true
+    },
+    {
+      "query": "Interview trainings",
+      "trace_id": "d1e18d8bd93d0e1efee49da12789fc47",
+      "used_web_search": true
+    },
+    {
+      "query": "ACC medical assistant programs",
+      "trace_id": "171d8156e7376c2b6cd6ac73cc51f03f",
+      "used_web_search": true
+    }
+  ],
+  "no_web_search_queries": [
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter, Financial Assistance, Childcare",
+      "trace_id": "2037d40a40ca8ef1de9f915fa9578654",
+      "used_web_search": false
+    },
+    {
+      "query": "baby supplies",
+      "trace_id": "d63e4f419ac6135b500c79e98ba4cf96",
+      "used_web_search": false
+    },
+    {
+      "query": "free household goods",
+      "trace_id": "d8210b048e879bf7f9cd727121a0b595",
+      "used_web_search": false
+    },
+    {
+      "query": "My client needs household goods",
+      "trace_id": "fd29a4718a27453b6a9dff1a76c1a087",
+      "used_web_search": false
+    },
+    {
+      "query": "My client needs home goods",
+      "trace_id": "a14995563255482f8f98f62611f4a9d6",
+      "used_web_search": false
+    },
+    {
+      "query": "low cost childcare\nFocus on resources close to the following location: georgetown",
+      "trace_id": "37c9f604195ab52d8fb8188b3b73dea2",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Substance Use & Treatment",
+      "trace_id": "68c30aae48a03109ff1b5f25326a96f7",
+      "used_web_search": false
+    },
+    {
+      "query": "clothes for job interviews",
+      "trace_id": "adc054a1556ae89114375ff133e92de0",
+      "used_web_search": false
+    },
+    {
+      "query": "phlebotomy training",
+      "trace_id": "46d108be6e811720f4b647ecb669ed55",
+      "used_web_search": false
+    },
+    {
+      "query": "Medical assistant training at community college",
+      "trace_id": "3f814b0ddc596e320d16b296f7cb32fa",
+      "used_web_search": false
+    },
+    {
+      "query": "Medical assistant training",
+      "trace_id": "4ae77fe8050e81f825cf74c19c88c2dc",
+      "used_web_search": false
+    },
+    {
+      "query": "free vision test",
+      "trace_id": "e4df4102627f179a919fd4271d91a120",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter, Food Assistance",
+      "trace_id": "16ecac52c4278f49220a2c1f05c7fdf8",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter, Food Assistance",
+      "trace_id": "4e73693f98e020ce7c2ef89f97e2f94f",
+      "used_web_search": false
+    },
+    {
+      "query": "emergency free food in austin",
+      "trace_id": "0432d3c175bd64d91a07b07497d65bcf",
+      "used_web_search": false
+    },
+    {
+      "query": "My client is looking for financial assistance to pay overdue rent\n\nInclude resources that support the following categories: Financial Assistance\nFocus on resources close to the following location: Austin (Travis county), TX 78724",
+      "trace_id": "9a8d10524c11da5dfb8e1b26f62661bb",
+      "used_web_search": false
+    },
+    {
+      "query": "Rental assistance \nInclude resources that support the following categories: Financial Assistance, Housing & Shelter\nInclude the following types of providers: government, community\nFocus on resources close to the following location: Austin (Travis county), TX 78724",
+      "trace_id": "d18462e40c58830e8287701acf3b9e5a",
+      "used_web_search": false
+    },
+    {
+      "query": "client needs food\nFocus on resources close to the following location: Austin (Travis county), TX 78753",
+      "trace_id": "83b0dd068b2957e562f0294cd613d239",
+      "used_web_search": false
+    },
+    {
+      "query": "client needs food",
+      "trace_id": "555b030828976f49e5ef3679a47df374",
+      "used_web_search": false
+    },
+    {
+      "query": "enrollment support for snap application in austin",
+      "trace_id": "2d0493e60797d912c86c972e7c7390be",
+      "used_web_search": false
+    },
+    {
+      "query": "SNAP benefit assistance application support programs in austin",
+      "trace_id": "3f2f9e69d5e4a1ff5b210908da09eafd",
+      "used_web_search": false
+    },
+    {
+      "query": "snap application support program in austin",
+      "trace_id": "2b626856bf689209003d595fb05ca721",
+      "used_web_search": false
+    },
+    {
+      "query": "my client is looking for snap filing support in austin",
+      "trace_id": "6206dc97a61909e0bb906c7eabebcde5",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Food Assistance",
+      "trace_id": "ec86f21f8f96c42e6869284186d2dd67",
+      "used_web_search": false
+    },
+    {
+      "query": "ESL Classes\nFocus on resources close to the following location: Leander, TX",
+      "trace_id": "4bff104c5e381de4e028eaaf0e08fbac",
+      "used_web_search": false
+    },
+    {
+      "query": "ESL Classes\nFocus on resources close to the following location: Leander, TX",
+      "trace_id": "45dbac6e5b65105eb49b91c4fc858b36",
+      "used_web_search": false
+    },
+    {
+      "query": "Rent assistance\nFocus on resources close to the following location: Austin (Travis county), TX 78758",
+      "trace_id": "ee82af249efc4fdff8eadbfc9ce62d5c",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Employment & Job Training",
+      "trace_id": "38b96de9301590a8bab44ba99584efcc",
+      "used_web_search": false
+    },
+    {
+      "query": "My client is looking for a job $15.00 working in a warehouse in the Austin (Travis county), TX 78753 area of Austin TX.\nHeavy lifting is OK\n\nInclude resources that support the following categories: Employment & Job Training\nInclude the following types of providers: community, government\nFocus on resources close to the following location: Austin (Travis county), TX 78753",
+      "trace_id": "0d6b163741548bf86fe50a7e7c38a6d9",
+      "used_web_search": false
+    },
+    {
+      "query": "rental assistance \nInclude resources that support the following categories: Housing & Shelter, Financial Assistance, Legal Services\nInclude the following types of providers: government, community\nFocus on resources close to the following location: Austin (Travis county), TX 78724",
+      "trace_id": "6edbb09c534ad8791109b487f68ddd94",
+      "used_web_search": false
+    },
+    {
+      "query": "MALE NEEDING CDL TRAINING, VETERAN\nInclude resources that support the following categories: Employment & Job Training, Childcare\nFocus on resources close to the following location: Austin (Travis county), TX 78701",
+      "trace_id": "c4e782d27cbf60e23c43aaa40bdadafa",
+      "used_web_search": false
+    },
+    {
+      "query": "Include resources that support the following categories: Housing & Shelter",
+      "trace_id": "2a0cafa4ec6183c21f13b57eb2465a6f",
+      "used_web_search": false
+    },
+    {
+      "query": "Client need emergency shelter and housing support. Adult Male, no children, not employed, does have a criminal background \nInclude resources that support the following categories: Housing & Shelter\nInclude the following types of providers: government, community\nFocus on resources close to the following location: Austin (Travis county), TX 78745",
+      "trace_id": "2eeeb7f1660f1b26bcfc7e763526cc31",
+      "used_web_search": false
+    },
+    {
+      "query": "low cost dental insurance",
+      "trace_id": "fc362b17599621e3b2c17dce5b2523d5",
+      "used_web_search": false
+    },
+    {
+      "query": "dress for success",
+      "trace_id": "6664d7315667f2ba3b0911641468090d",
+      "used_web_search": false
+    }
+  ],
+  "total_web_search": 20,
+  "total_no_web_search": 35,
+  "baseline_rate": 0.36363636363636365,
+  "query_format": "category-based",
+  "note": "Sample of recent 1000 spans"
+}

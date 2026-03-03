@@ -1,0 +1,265 @@
+================================================================================
+ACCURATE WEB SEARCH DETECTION TEST
+================================================================================
+Model: gpt-5.1
+Reasoning: none
+Temperature: 0.25
+Test prompts: 20
+================================================================================
+
+Method: Inspecting API response object for actual tool invocations
+================================================================================
+
+================================================================================
+Test 1/20
+Prompt: Single mother with 2 kids facing eviction in Austin, needs emergency h...
+================================================================================
+✅ Complete
+⏱️  16.39s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 2/20
+Prompt: Homeless veteran in Travis County needs transitional housing and job t...
+================================================================================
+✅ Complete
+⏱️  18.66s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 3/20
+Prompt: Low-income family with 4 children needs food assistance in Austin, TX...
+================================================================================
+✅ Complete
+⏱️  14.25s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 4/20
+Prompt: Unemployed single parent needs job training and childcare assistance i...
+================================================================================
+✅ Complete
+⏱️  13.44s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 5/20
+Prompt: Uninsured family needs low-cost healthcare clinic in Austin, TX...
+================================================================================
+✅ Complete
+⏱️  13.31s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 6/20
+Prompt: Working parent needs affordable childcare for toddler and preschooler ...
+================================================================================
+✅ Complete
+⏱️  14.47s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 7/20
+Prompt: Person recently laid off needs help applying for unemployment benefits...
+================================================================================
+✅ Complete
+⏱️  13.04s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 8/20
+Prompt: Elderly couple on fixed income needs help with rising rent costs in Au...
+================================================================================
+✅ Complete
+⏱️  13.23s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 9/20
+Prompt: Ex-offender needs employment programs for people with criminal records...
+================================================================================
+✅ Complete
+⏱️  16.99s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 10/20
+Prompt: Person with substance abuse issues needs addiction treatment programs ...
+================================================================================
+✅ Complete
+⏱️  13.05s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 11/20
+Prompt: Family escaping domestic violence needs emergency shelter in Central T...
+================================================================================
+✅ Complete
+⏱️  9.34s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 12/20
+Prompt: Young adult aging out of foster care needs affordable housing options ...
+================================================================================
+✅ Complete
+⏱️  15.77s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 13/20
+Prompt: Elderly person living alone needs home-delivered meals in Travis Count...
+================================================================================
+✅ Complete
+⏱️  9.37s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 14/20
+Prompt: College student struggling with food insecurity needs food pantry loca...
+================================================================================
+✅ Complete
+⏱️  13.58s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 15/20
+Prompt: Person with disability needs supported employment services in Central ...
+================================================================================
+✅ Complete
+⏱️  17.88s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 16/20
+Prompt: Recent immigrant needs ESL classes and job placement assistance in Aus...
+================================================================================
+✅ Complete
+⏱️  16.61s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 17/20
+Prompt: Senior citizen needs help navigating Medicare and prescription drug co...
+================================================================================
+✅ Complete
+⏱️  15.55s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 18/20
+Prompt: Pregnant woman without insurance needs prenatal care in Travis County...
+================================================================================
+✅ Complete
+⏱️  13.75s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 19/20
+Prompt: Family needs after-school programs for elementary school children in E...
+================================================================================
+✅ Complete
+⏱️  16.10s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+Test 20/20
+Prompt: Low-income family needs Head Start or Pre-K programs for 3-year-old...
+================================================================================
+✅ Complete
+⏱️  23.17s
+🔍 Web search detected: YES
+📋 Evidence: web_search/tool in response metadata
+📦 Response type: Response
+📦 Response attributes: ['background', 'completed_at', 'construct', 'conversation', 'copy', 'created_at', 'dict', 'error', 'from_orm', 'id']...
+
+================================================================================
+ANALYSIS: Actual Web Search Usage
+================================================================================
+
+✅ Web search DETECTED: 20/20 (100.0%)
+❌ Web search NOT detected: 0/20 (0.0%)
+
+================================================================================
+DETECTION EVIDENCE SUMMARY
+================================================================================
+
+Evidence types found:
+  - web_search/tool in response metadata: 20 times
+
+================================================================================
+RESPONSE STRUCTURE ANALYSIS
+================================================================================
+
+Sample response structure:
+  Type: Response
+  Has tool_calls: False
+  Has additional_kwargs: False
+  Available attributes: background, completed_at, construct, conversation, copy, created_at, dict, error, from_orm, id, incomplete_details, instructions, json, max_output_tokens, max_tool_calls...
+
+================================================================================
+CONCLUSION
+================================================================================
+
+✅ Web search detected in ALL 20 queries
+   Web search appears to be working as expected
+
+💾 Detailed results saved to: accurate_websearch_detection_results.json
+================================================================================

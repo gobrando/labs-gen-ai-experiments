@@ -1,0 +1,46 @@
+{
+  "production_baseline_phoenix": 36.36363636363637,
+  "total_queries": 55,
+  "results": {
+    "baseline": {
+      "web_search_count": 55,
+      "total_calls": 55,
+      "web_search_rate": 100.0,
+      "avg_latency": 30.933371405168014,
+      "baseline_diff": 63.63636363636363
+    },
+    "temp_0.0": {
+      "web_search_count": 55,
+      "total_calls": 55,
+      "web_search_rate": 100.0,
+      "avg_latency": 28.982415550405328,
+      "baseline_diff": 63.63636363636363
+    },
+    "temp_1.0": {
+      "web_search_count": 55,
+      "total_calls": 55,
+      "web_search_rate": 100.0,
+      "avg_latency": 103.18717108206316,
+      "baseline_diff": 63.63636363636363
+    },
+    "reasoning_low": {
+      "web_search_count": 55,
+      "total_calls": 55,
+      "web_search_rate": 100.0,
+      "avg_latency": 72.09520413658835,
+      "baseline_diff": 63.63636363636363
+    }
+  },
+  "analysis": {
+    "temperature_effect": {
+      "temp_0_vs_baseline": 0.0,
+      "temp_1_vs_baseline": 0.0,
+      "conclusion": "minimal"
+    },
+    "reasoning_effect": {
+      "low_vs_none": 0.0,
+      "latency_increase": 41.16183273142033,
+      "conclusion": "minimal"
+    }
+  }
+}

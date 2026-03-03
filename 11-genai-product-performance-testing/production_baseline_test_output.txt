@@ -1,0 +1,352 @@
+Loaded 55 real production queries
+Production baseline from Phoenix: 36.4% web search
+
+================================================================================
+PRODUCTION BASELINE VERIFICATION TEST
+================================================================================
+Goal: Establish proper baseline with minimal prompt, then test parameter effects
+
+
+================================================================================
+STEP 1: ESTABLISH BASELINE
+================================================================================
+Using: temperature=0.9, reasoning='none', minimal system prompt
+
+================================================================================
+TESTING: BASELINE (temp=0.9, reasoning=none)
+================================================================================
+   1. ✅ WEB (prod:WEB) |   6.01s | household goods
+   2. ✅ WEB (prod:WEB) |  19.57s | My client needs free furniture
+   3. ✅ WEB (prod:WEB) |  21.61s | My client needs household goods
+   4. ✅ WEB (prod:WEB) |  26.52s | lvn training
+Focus on resources close to the follo
+   5. ✅ WEB (prod:WEB) |  18.53s | clothes for job interviews
+   6. ✅ WEB (prod:WEB) |  37.23s | My client is a 30 year old male who speaks Arabic 
+   7. ✅ WEB (prod:WEB) |  24.95s | free vision test for needy clients
+   8. ✅ WEB (prod:WEB) |  36.28s | My client needs assistance with buying a computer 
+   9. ✅ WEB (prod:WEB) |  37.33s | My client needs assistance with buying a computer 
+  10. ✅ WEB (prod:WEB) |  31.44s | My client needs assistance with buying a computer 
+  11. ✅ WEB (prod:WEB) |  38.84s | My client needs financial assistance to buy a comp
+  12. ✅ WEB (prod:WEB) |  30.00s | client needs housing resources, food assistance, l
+  13. ✅ WEB (prod:WEB) |  15.79s | client is seeking enrollment assistance for SNAP a
+  14. ✅ WEB (prod:WEB) |  29.61s | Free furniture for newly housed client 
+Focus on r
+  15. ✅ WEB (prod:WEB) |  36.46s | My client is seeking a part time job in customer s
+  16. ✅ WEB (prod:WEB) |  20.80s | SNAP benefits application help
+Focus on resources 
+  17. ✅ WEB (prod:WEB) |  21.33s | What CAT classes are currently offered at the Good
+  18. ✅ WEB (prod:WEB) |  30.21s | Include resources that support the following categ
+  19. ✅ WEB (prod:WEB) |  22.77s | Interview trainings
+  20. ✅ WEB (prod:WEB) |  17.36s | ACC medical assistant programs
+  21. ⚠️ WEB (prod: NO) |  27.49s | Include resources that support the following categ
+  22. ⚠️ WEB (prod: NO) |   4.56s | baby supplies
+  23. ⚠️ WEB (prod: NO) |  21.43s | free household goods
+  24. ⚠️ WEB (prod: NO) |  14.45s | My client needs household goods
+  25. ⚠️ WEB (prod: NO) |   8.61s | My client needs home goods
+  26. ⚠️ WEB (prod: NO) |  28.03s | low cost childcare
+Focus on resources close to the
+  27. ⚠️ WEB (prod: NO) |  28.53s | Include resources that support the following categ
+  28. ⚠️ WEB (prod: NO) |  19.60s | clothes for job interviews
+  29. ⚠️ WEB (prod: NO) |  18.28s | phlebotomy training
+  30. ⚠️ WEB (prod: NO) |  24.49s | Medical assistant training at community college
+  31. ⚠️ WEB (prod: NO) |  18.64s | Medical assistant training
+  32. ⚠️ WEB (prod: NO) |  39.26s | free vision test
+  33. ⚠️ WEB (prod: NO) |  51.30s | Include resources that support the following categ
+  34. ⚠️ WEB (prod: NO) |  45.20s | Include resources that support the following categ
+  35. ⚠️ WEB (prod: NO) |  21.95s | emergency free food in austin
+  36. ⚠️ WEB (prod: NO) |  34.18s | My client is looking for financial assistance to p
+  37. ⚠️ WEB (prod: NO) |  41.45s | Rental assistance 
+Include resources that support 
+  38. ⚠️ WEB (prod: NO) |  20.42s | client needs food
+Focus on resources close to the 
+  39. ⚠️ WEB (prod: NO) |  14.23s | client needs food
+  40. ⚠️ WEB (prod: NO) |  12.51s | enrollment support for snap application in austin
+  41. ⚠️ WEB (prod: NO) |  15.78s | SNAP benefit assistance application support progra
+  42. ⚠️ WEB (prod: NO) |  11.06s | snap application support program in austin
+  43. ⚠️ WEB (prod: NO) |  13.84s | my client is looking for snap filing support in au
+  44. ⚠️ WEB (prod: NO) |  13.82s | Include resources that support the following categ
+  45. ⚠️ WEB (prod: NO) |  24.27s | ESL Classes
+Focus on resources close to the follow
+  46. ⚠️ WEB (prod: NO) | 262.73s | ESL Classes
+Focus on resources close to the follow
+  47. ⚠️ WEB (prod: NO) |  70.94s | Rent assistance
+Focus on resources close to the fo
+  48. ⚠️ WEB (prod: NO) |  24.23s | Include resources that support the following categ
+  49. ⚠️ WEB (prod: NO) |  30.13s | My client is looking for a job $15.00 working in a
+  50. ⚠️ WEB (prod: NO) |  54.49s | rental assistance 
+Include resources that support 
+  51. ⚠️ WEB (prod: NO) |  38.37s | MALE NEEDING CDL TRAINING, VETERAN
+Include resourc
+  52. ⚠️ WEB (prod: NO) |  41.29s | Include resources that support the following categ
+  53. ⚠️ WEB (prod: NO) |  53.56s | Client need emergency shelter and housing support.
+  54. ⚠️ WEB (prod: NO) |  19.96s | low cost dental insurance
+  55. ⚠️ WEB (prod: NO) |   9.62s | dress for success
+
+  Results:
+    Web search rate: 100.0% (55/55)
+    Difference from prod baseline: +63.6 percentage points
+    Avg latency: 30.93s
+
+================================================================================
+STEP 2: TEST TEMPERATURE VARIATIONS
+================================================================================
+
+================================================================================
+TESTING: Temperature 0.0
+================================================================================
+   1. ✅ WEB (prod:WEB) |   5.31s | household goods
+   2. ✅ WEB (prod:WEB) |  24.96s | My client needs free furniture
+   3. ✅ WEB (prod:WEB) |   5.40s | My client needs household goods
+   4. ✅ WEB (prod:WEB) |  29.08s | lvn training
+Focus on resources close to the follo
+   5. ✅ WEB (prod:WEB) |  15.88s | clothes for job interviews
+   6. ✅ WEB (prod:WEB) |  30.31s | My client is a 30 year old male who speaks Arabic 
+   7. ✅ WEB (prod:WEB) |  15.15s | free vision test for needy clients
+   8. ✅ WEB (prod:WEB) |  35.36s | My client needs assistance with buying a computer 
+   9. ✅ WEB (prod:WEB) |  35.74s | My client needs assistance with buying a computer 
+  10. ✅ WEB (prod:WEB) |  28.78s | My client needs assistance with buying a computer 
+  11. ✅ WEB (prod:WEB) |  38.57s | My client needs financial assistance to buy a comp
+  12. ✅ WEB (prod:WEB) |  28.07s | client needs housing resources, food assistance, l
+  13. ✅ WEB (prod:WEB) |  11.51s | client is seeking enrollment assistance for SNAP a
+  14. ✅ WEB (prod:WEB) |  28.66s | Free furniture for newly housed client 
+Focus on r
+  15. ✅ WEB (prod:WEB) |  22.27s | My client is seeking a part time job in customer s
+  16. ✅ WEB (prod:WEB) |  21.89s | SNAP benefits application help
+Focus on resources 
+  17. ✅ WEB (prod:WEB) |  16.40s | What CAT classes are currently offered at the Good
+  18. ✅ WEB (prod:WEB) |  39.93s | Include resources that support the following categ
+  19. ✅ WEB (prod:WEB) |  17.91s | Interview trainings
+  20. ✅ WEB (prod:WEB) |  19.89s | ACC medical assistant programs
+  21. ⚠️ WEB (prod: NO) |  69.27s | Include resources that support the following categ
+  22. ⚠️ WEB (prod: NO) |  18.29s | baby supplies
+  23. ⚠️ WEB (prod: NO) |  20.37s | free household goods
+  24. ⚠️ WEB (prod: NO) |  33.24s | My client needs household goods
+  25. ⚠️ WEB (prod: NO) |  82.51s | My client needs home goods
+  26. ⚠️ WEB (prod: NO) |  31.33s | low cost childcare
+Focus on resources close to the
+  27. ⚠️ WEB (prod: NO) |  38.10s | Include resources that support the following categ
+  28. ⚠️ WEB (prod: NO) |  20.23s | clothes for job interviews
+  29. ⚠️ WEB (prod: NO) |  20.43s | phlebotomy training
+  30. ⚠️ WEB (prod: NO) |  11.80s | Medical assistant training at community college
+  31. ⚠️ WEB (prod: NO) |  24.47s | Medical assistant training
+  32. ⚠️ WEB (prod: NO) |  24.46s | free vision test
+  33. ⚠️ WEB (prod: NO) |  41.00s | Include resources that support the following categ
+  34. ⚠️ WEB (prod: NO) |  40.91s | Include resources that support the following categ
+  35. ⚠️ WEB (prod: NO) |  16.85s | emergency free food in austin
+  36. ⚠️ WEB (prod: NO) |  29.52s | My client is looking for financial assistance to p
+  37. ⚠️ WEB (prod: NO) |  32.26s | Rental assistance 
+Include resources that support 
+  38. ⚠️ WEB (prod: NO) |  33.59s | client needs food
+Focus on resources close to the 
+  39. ⚠️ WEB (prod: NO) |  19.92s | client needs food
+  40. ⚠️ WEB (prod: NO) |  12.75s | enrollment support for snap application in austin
+  41. ⚠️ WEB (prod: NO) |  25.28s | SNAP benefit assistance application support progra
+  42. ⚠️ WEB (prod: NO) |  25.70s | snap application support program in austin
+  43. ⚠️ WEB (prod: NO) |  12.85s | my client is looking for snap filing support in au
+  44. ⚠️ WEB (prod: NO) |  31.96s | Include resources that support the following categ
+  45. ⚠️ WEB (prod: NO) |  39.39s | ESL Classes
+Focus on resources close to the follow
+  46. ⚠️ WEB (prod: NO) |  31.89s | ESL Classes
+Focus on resources close to the follow
+  47. ⚠️ WEB (prod: NO) |  30.63s | Rent assistance
+Focus on resources close to the fo
+  48. ⚠️ WEB (prod: NO) |  23.87s | Include resources that support the following categ
+  49. ⚠️ WEB (prod: NO) |  42.50s | My client is looking for a job $15.00 working in a
+  50. ⚠️ WEB (prod: NO) |  55.18s | rental assistance 
+Include resources that support 
+  51. ⚠️ WEB (prod: NO) |  50.10s | MALE NEEDING CDL TRAINING, VETERAN
+Include resourc
+  52. ⚠️ WEB (prod: NO) |  33.89s | Include resources that support the following categ
+  53. ⚠️ WEB (prod: NO) |  55.39s | Client need emergency shelter and housing support.
+  54. ⚠️ WEB (prod: NO) |  31.02s | low cost dental insurance
+  55. ⚠️ WEB (prod: NO) |  12.00s | dress for success
+
+  Results:
+    Web search rate: 100.0% (55/55)
+    Difference from prod baseline: +63.6 percentage points
+    Avg latency: 28.98s
+
+================================================================================
+TESTING: Temperature 1.0
+================================================================================
+   1. ✅ WEB (prod:WEB) |   7.71s | household goods
+   2. ✅ WEB (prod:WEB) |  46.34s | My client needs free furniture
+   3. ✅ WEB (prod:WEB) |  22.50s | My client needs household goods
+   4. ✅ WEB (prod:WEB) |  24.03s | lvn training
+Focus on resources close to the follo
+   5. ✅ WEB (prod:WEB) |  16.16s | clothes for job interviews
+   6. ✅ WEB (prod:WEB) |  57.01s | My client is a 30 year old male who speaks Arabic 
+   7. ✅ WEB (prod:WEB) |  26.30s | free vision test for needy clients
+   8. ✅ WEB (prod:WEB) |  40.79s | My client needs assistance with buying a computer 
+   9. ✅ WEB (prod:WEB) |  28.45s | My client needs assistance with buying a computer 
+  10. ✅ WEB (prod:WEB) |  34.52s | My client needs assistance with buying a computer 
+  11. ✅ WEB (prod:WEB) |  38.38s | My client needs financial assistance to buy a comp
+  12. ✅ WEB (prod:WEB) |  24.39s | client needs housing resources, food assistance, l
+  13. ✅ WEB (prod:WEB) |  35.13s | client is seeking enrollment assistance for SNAP a
+  14. ✅ WEB (prod:WEB) |  59.51s | Free furniture for newly housed client 
+Focus on r
+  15. ✅ WEB (prod:WEB) |  32.56s | My client is seeking a part time job in customer s
+  16. ✅ WEB (prod:WEB) |  32.56s | SNAP benefits application help
+Focus on resources 
+  17. ✅ WEB (prod:WEB) |  35.67s | What CAT classes are currently offered at the Good
+  18. ✅ WEB (prod:WEB) |  34.47s | Include resources that support the following categ
+  19. ✅ WEB (prod:WEB) |  22.89s | Interview trainings
+  20. ✅ WEB (prod:WEB) |  13.24s | ACC medical assistant programs
+  21. ⚠️ WEB (prod: NO) |  40.70s | Include resources that support the following categ
+  22. ⚠️ WEB (prod: NO) |  14.43s | baby supplies
+  23. ⚠️ WEB (prod: NO) |  28.08s | free household goods
+  24. ⚠️ WEB (prod: NO) |  15.99s | My client needs household goods
+  25. ⚠️ WEB (prod: NO) |  17.99s | My client needs home goods
+  26. ⚠️ WEB (prod: NO) |  26.34s | low cost childcare
+Focus on resources close to the
+  27. ⚠️ WEB (prod: NO) | 3899.28s | Include resources that support the following categ
+  28. ⚠️ WEB (prod: NO) |  13.02s | clothes for job interviews
+  29. ⚠️ WEB (prod: NO) |  33.69s | phlebotomy training
+  30. ⚠️ WEB (prod: NO) |  41.30s | Medical assistant training at community college
+  31. ⚠️ WEB (prod: NO) |  37.98s | Medical assistant training
+  32. ⚠️ WEB (prod: NO) |  21.83s | free vision test
+  33. ⚠️ WEB (prod: NO) |  53.59s | Include resources that support the following categ
+  34. ⚠️ WEB (prod: NO) |  48.26s | Include resources that support the following categ
+  35. ⚠️ WEB (prod: NO) |  19.16s | emergency free food in austin
+  36. ⚠️ WEB (prod: NO) |  48.17s | My client is looking for financial assistance to p
+  37. ⚠️ WEB (prod: NO) |  52.11s | Rental assistance 
+Include resources that support 
+  38. ⚠️ WEB (prod: NO) |  29.60s | client needs food
+Focus on resources close to the 
+  39. ⚠️ WEB (prod: NO) |  16.96s | client needs food
+  40. ⚠️ WEB (prod: NO) |  18.17s | enrollment support for snap application in austin
+  41. ⚠️ WEB (prod: NO) |  12.82s | SNAP benefit assistance application support progra
+  42. ⚠️ WEB (prod: NO) |  24.36s | snap application support program in austin
+  43. ⚠️ WEB (prod: NO) |  15.53s | my client is looking for snap filing support in au
+  44. ⚠️ WEB (prod: NO) |  31.83s | Include resources that support the following categ
+  45. ⚠️ WEB (prod: NO) |  33.51s | ESL Classes
+Focus on resources close to the follow
+  46. ⚠️ WEB (prod: NO) |  22.60s | ESL Classes
+Focus on resources close to the follow
+  47. ⚠️ WEB (prod: NO) |  36.24s | Rent assistance
+Focus on resources close to the fo
+  48. ⚠️ WEB (prod: NO) |  76.05s | Include resources that support the following categ
+  49. ⚠️ WEB (prod: NO) |  52.84s | My client is looking for a job $15.00 working in a
+  50. ⚠️ WEB (prod: NO) |  57.99s | rental assistance 
+Include resources that support 
+  51. ⚠️ WEB (prod: NO) |  44.60s | MALE NEEDING CDL TRAINING, VETERAN
+Include resourc
+  52. ⚠️ WEB (prod: NO) |  38.68s | Include resources that support the following categ
+  53. ⚠️ WEB (prod: NO) |  84.78s | Client need emergency shelter and housing support.
+  54. ⚠️ WEB (prod: NO) |  19.01s | low cost dental insurance
+  55. ⚠️ WEB (prod: NO) |  15.17s | dress for success
+
+  Results:
+    Web search rate: 100.0% (55/55)
+    Difference from prod baseline: +63.6 percentage points
+    Avg latency: 103.19s
+
+================================================================================
+STEP 3: TEST REASONING VARIATION
+================================================================================
+
+================================================================================
+TESTING: Reasoning 'low' (no temperature)
+================================================================================
+   1. ✅ WEB (prod:WEB) |   9.51s | household goods
+   2. ✅ WEB (prod:WEB) |  26.25s | My client needs free furniture
+   3. ✅ WEB (prod:WEB) |  27.00s | My client needs household goods
+   4. ✅ WEB (prod:WEB) |  30.71s | lvn training
+Focus on resources close to the follo
+   5. ✅ WEB (prod:WEB) |  21.11s | clothes for job interviews
+   6. ✅ WEB (prod:WEB) |  32.76s | My client is a 30 year old male who speaks Arabic 
+   7. ✅ WEB (prod:WEB) |  13.79s | free vision test for needy clients
+   8. ✅ WEB (prod:WEB) |  61.58s | My client needs assistance with buying a computer 
+   9. ✅ WEB (prod:WEB) |  66.06s | My client needs assistance with buying a computer 
+  10. ✅ WEB (prod:WEB) |  44.01s | My client needs assistance with buying a computer 
+  11. ✅ WEB (prod:WEB) |  70.74s | My client needs financial assistance to buy a comp
+  12. ✅ WEB (prod:WEB) |  32.68s | client needs housing resources, food assistance, l
+  13. ✅ WEB (prod:WEB) |  17.70s | client is seeking enrollment assistance for SNAP a
+  14. ✅ WEB (prod:WEB) |  34.59s | Free furniture for newly housed client 
+Focus on r
+  15. ✅ WEB (prod:WEB) |  35.00s | My client is seeking a part time job in customer s
+  16. ✅ WEB (prod:WEB) |  14.60s | SNAP benefits application help
+Focus on resources 
+  17. ✅ WEB (prod:WEB) |  43.77s | What CAT classes are currently offered at the Good
+  18. ✅ WEB (prod:WEB) |  26.14s | Include resources that support the following categ
+  19. ✅ WEB (prod:WEB) |  12.49s | Interview trainings
+  20. ✅ WEB (prod:WEB) |  11.09s | ACC medical assistant programs
+  21. ⚠️ WEB (prod: NO) |  32.29s | Include resources that support the following categ
+  22. ⚠️ WEB (prod: NO) |  11.67s | baby supplies
+  23. ⚠️ WEB (prod: NO) |  16.94s | free household goods
+  24. ⚠️ WEB (prod: NO) |  20.18s | My client needs household goods
+  25. ⚠️ WEB (prod: NO) |  19.95s | My client needs home goods
+  26. ⚠️ WEB (prod: NO) |  29.21s | low cost childcare
+Focus on resources close to the
+  27. ⚠️ WEB (prod: NO) |  36.39s | Include resources that support the following categ
+  28. ⚠️ WEB (prod: NO) |  12.32s | clothes for job interviews
+  29. ⚠️ WEB (prod: NO) |  17.48s | phlebotomy training
+  30. ⚠️ WEB (prod: NO) |  25.13s | Medical assistant training at community college
+  31. ⚠️ WEB (prod: NO) |  27.43s | Medical assistant training
+  32. ⚠️ WEB (prod: NO) |  25.26s | free vision test
+  33. ⚠️ WEB (prod: NO) |  74.19s | Include resources that support the following categ
+  34. ⚠️ WEB (prod: NO) |  49.98s | Include resources that support the following categ
+  35. ⚠️ WEB (prod: NO) |  17.32s | emergency free food in austin
+  36. ⚠️ WEB (prod: NO) |  61.45s | My client is looking for financial assistance to p
+  37. ⚠️ WEB (prod: NO) |  64.63s | Rental assistance 
+Include resources that support 
+  38. ⚠️ WEB (prod: NO) |  35.94s | client needs food
+Focus on resources close to the 
+  39. ⚠️ WEB (prod: NO) |  14.65s | client needs food
+  40. ⚠️ WEB (prod: NO) |  13.29s | enrollment support for snap application in austin
+  41. ⚠️ WEB (prod: NO) |  18.23s | SNAP benefit assistance application support progra
+  42. ⚠️ WEB (prod: NO) |  11.82s | snap application support program in austin
+  43. ⚠️ WEB (prod: NO) |  17.01s | my client is looking for snap filing support in au
+  44. ⚠️ WEB (prod: NO) |  31.76s | Include resources that support the following categ
+  45. ⚠️ WEB (prod: NO) |  31.23s | ESL Classes
+Focus on resources close to the follow
+  46. ⚠️ WEB (prod: NO) |  30.53s | ESL Classes
+Focus on resources close to the follow
+  47. ⚠️ WEB (prod: NO) |  27.56s | Rent assistance
+Focus on resources close to the fo
+  48. ⚠️ WEB (prod: NO) |  23.33s | Include resources that support the following categ
+  49. ⚠️ WEB (prod: NO) |  23.47s | My client is looking for a job $15.00 working in a
+  50. ⚠️ WEB (prod: NO) |  69.75s | rental assistance 
+Include resources that support 
+  51. ⚠️ WEB (prod: NO) |  41.98s | MALE NEEDING CDL TRAINING, VETERAN
+Include resourc
+  52. ⚠️ WEB (prod: NO) |  46.43s | Include resources that support the following categ
+  53. ⚠️ WEB (prod: NO) | 2331.42s | Client need emergency shelter and housing support.
+  54. ⚠️ WEB (prod: NO) |  11.55s | low cost dental insurance
+  55. ⚠️ WEB (prod: NO) |  11.91s | dress for success
+
+  Results:
+    Web search rate: 100.0% (55/55)
+    Difference from prod baseline: +63.6 percentage points
+    Avg latency: 72.10s
+
+================================================================================
+FINAL SUMMARY
+================================================================================
+
+Production baseline from Phoenix: 36.4%
+Total queries tested: 55
+
+Configuration                      | Web Search Rate | Diff from Prod | Avg Latency
+-------------------------------------------------------------------------------------
+BASELINE (temp=0.9, r=none)        |          100.0% |         +63.6pp |      30.93s
+Temperature 0.0                    |          100.0% |         +63.6pp |      28.98s
+Temperature 1.0                    |          100.0% |         +63.6pp |     103.19s
+Reasoning low (no temp)            |          100.0% |         +63.6pp |      72.10s
+
+================================================================================
+ANALYSIS
+================================================================================
+
+Temperature Effect on Web Search Rate:
+  temp=0.0 vs baseline: +0.0 percentage points
+  temp=1.0 vs baseline: +0.0 percentage points
+  ✅ Conclusion: Temperature has MINIMAL effect on web search rate (<5pp change)
+
+Reasoning Level Effect:
+  reasoning=low vs none: +0.0 percentage points
+  Latency increase: +41.16s
+  ✅ Conclusion: Reasoning has MINIMAL effect on web search rate (<5pp change)
+
+✅ Results saved to: production_baseline_test_results.json
+================================================================================

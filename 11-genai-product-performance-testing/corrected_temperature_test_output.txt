@@ -1,0 +1,176 @@
+Loaded 55 real production queries
+Production baseline web search rate: 36.4%
+
+Testing with 30 queries
+
+================================================================================
+CORRECTED TEMPERATURE vs WEB SEARCH TEST
+================================================================================
+Testing with REAL production queries
+Production baseline: 36.4% web search rate
+
+
+================================================================================
+TESTING TEMPERATURE: 0.0
+================================================================================
+   1.    NO | 14.07s | household goods
+   2.    NO | 4235.51s | My client needs free furniture
+   3.    NO | 20.83s | My client needs household goods
+   4.    NO | 14.26s | lvn training
+Focus on resources close to the following locat
+   5.    NO | 15.17s | clothes for job interviews
+   6.    NO | 28.41s | My client is a 30 year old male who speaks Arabic and limite
+   7.    NO | 28.48s | free vision test for needy clients
+   8.    NO | 33.15s | My client needs assistance with buying a computer or laptop
+
+   9.    NO | 33.78s | My client needs assistance with buying a computer or laptop
+
+  10.    NO | 25.72s | My client needs assistance with buying a computer or laptop
+
+  11.    NO | 28.82s | My client needs financial assistance to buy a computer
+
+Incl
+  12.    NO | 26.00s | client needs housing resources, food assistance, legal assis
+  13.    NO | 13.10s | client is seeking enrollment assistance for SNAP application
+  14.    NO | 22.37s | Free furniture for newly housed client 
+Focus on resources c
+  15.    NO | 25.07s | My client is seeking a part time job in customer services re
+  16.    NO | 17.43s | SNAP benefits application help
+Focus on resources close to t
+  17.    NO | 12.42s | What CAT classes are currently offered at the Goodwill Commu
+  18.    NO | 25.98s | Include resources that support the following categories: Hou
+  19.    NO | 11.65s | Interview trainings
+  20.    NO |  7.22s | ACC medical assistant programs
+  21.    NO | 16.62s | Include resources that support the following categories: Hou
+  22.    NO | 10.20s | baby supplies
+  23.    NO | 15.59s | free household goods
+  24.    NO | 12.07s | My client needs household goods
+  25.    NO |  9.36s | My client needs home goods
+  26.    NO | 13.78s | low cost childcare
+Focus on resources close to the following
+  27.    NO | 28.62s | Include resources that support the following categories: Sub
+  28.    NO |  6.63s | clothes for job interviews
+  29.    NO |  9.07s | phlebotomy training
+  30.    NO | 10.95s | Medical assistant training at community college
+
+  Web search rate: 0.0% (0/30)
+  Avg latency: 159.08s
+
+================================================================================
+TESTING TEMPERATURE: 0.5
+================================================================================
+   1.    NO | 15.29s | household goods
+   2.    NO | 23.24s | My client needs free furniture
+   3.    NO | 14.49s | My client needs household goods
+   4.    NO | 17.11s | lvn training
+Focus on resources close to the following locat
+   5.    NO |  7.49s | clothes for job interviews
+   6.    NO | 22.23s | My client is a 30 year old male who speaks Arabic and limite
+   7.    NO | 18.57s | free vision test for needy clients
+   8.    NO | 21.75s | My client needs assistance with buying a computer or laptop
+
+   9.    NO | 26.35s | My client needs assistance with buying a computer or laptop
+
+  10.    NO | 27.19s | My client needs assistance with buying a computer or laptop
+
+  11.    NO | 43.93s | My client needs financial assistance to buy a computer
+
+Incl
+  12.    NO | 20.78s | client needs housing resources, food assistance, legal assis
+  13.    NO | 12.65s | client is seeking enrollment assistance for SNAP application
+  14.    NO | 17.40s | Free furniture for newly housed client 
+Focus on resources c
+  15.    NO | 20.98s | My client is seeking a part time job in customer services re
+  16.    NO |  8.59s | SNAP benefits application help
+Focus on resources close to t
+  17.    NO | 13.66s | What CAT classes are currently offered at the Goodwill Commu
+  18.    NO | 26.76s | Include resources that support the following categories: Hou
+  19.    NO | 12.19s | Interview trainings
+  20.    NO |  7.64s | ACC medical assistant programs
+  21.    NO | 14.51s | Include resources that support the following categories: Hou
+  22.    NO | 11.79s | baby supplies
+  23.    NO | 17.65s | free household goods
+  24.    NO | 10.07s | My client needs household goods
+  25.    NO | 13.37s | My client needs home goods
+  26.    NO | 25.00s | low cost childcare
+Focus on resources close to the following
+  27.    NO | 22.24s | Include resources that support the following categories: Sub
+  28.    NO | 10.37s | clothes for job interviews
+  29.    NO | 11.71s | phlebotomy training
+  30.    NO | 17.16s | Medical assistant training at community college
+
+  Web search rate: 0.0% (0/30)
+  Avg latency: 17.74s
+
+================================================================================
+TESTING TEMPERATURE: 1.0
+================================================================================
+   1.    NO | 16.01s | household goods
+   2.    NO | 23.81s | My client needs free furniture
+   3.    NO | 17.88s | My client needs household goods
+   4.    NO | 25.54s | lvn training
+Focus on resources close to the following locat
+   5.    NO | 13.04s | clothes for job interviews
+   6.    NO | 26.85s | My client is a 30 year old male who speaks Arabic and limite
+   7.    NO | 18.39s | free vision test for needy clients
+   8.    NO | 36.12s | My client needs assistance with buying a computer or laptop
+
+   9.    NO | 34.45s | My client needs assistance with buying a computer or laptop
+
+  10.    NO | 28.60s | My client needs assistance with buying a computer or laptop
+
+  11.    NO | 29.66s | My client needs financial assistance to buy a computer
+
+Incl
+  12.    NO | 23.06s | client needs housing resources, food assistance, legal assis
+  13.    NO | 14.98s | client is seeking enrollment assistance for SNAP application
+  14.    NO | 37.58s | Free furniture for newly housed client 
+Focus on resources c
+  15.    NO | 50.25s | My client is seeking a part time job in customer services re
+  16.    NO | 20.41s | SNAP benefits application help
+Focus on resources close to t
+  17.    NO | 13.51s | What CAT classes are currently offered at the Goodwill Commu
+  18.    NO | 28.48s | Include resources that support the following categories: Hou
+  19.    NO | 10.69s | Interview trainings
+  20.    NO | 14.64s | ACC medical assistant programs
+  21.    NO | 23.35s | Include resources that support the following categories: Hou
+  22.    NO | 14.02s | baby supplies
+  23.    NO | 13.47s | free household goods
+  24.    NO | 25.43s | My client needs household goods
+  25.    NO | 14.22s | My client needs home goods
+  26.    NO | 20.16s | low cost childcare
+Focus on resources close to the following
+  27.    NO | 26.24s | Include resources that support the following categories: Sub
+  28.    NO | 16.02s | clothes for job interviews
+  29.    NO | 12.86s | phlebotomy training
+  30.    NO | 15.97s | Medical assistant training at community college
+
+  Web search rate: 0.0% (0/30)
+  Avg latency: 22.19s
+
+================================================================================
+CORRECTED TEST RESULTS SUMMARY
+================================================================================
+
+Production baseline: 36.4% web search rate
+Total queries tested per temperature: 30
+
+Results by temperature:
+
+  Temperature 0.0:
+    Web search rate:   0.0% (0/30)
+    Difference from baseline: -36.4 percentage points
+    Avg latency: 159.08s
+
+  Temperature 0.5:
+    Web search rate:   0.0% (0/30)
+    Difference from baseline: -36.4 percentage points
+    Avg latency: 17.74s
+
+  Temperature 1.0:
+    Web search rate:   0.0% (0/30)
+    Difference from baseline: -36.4 percentage points
+    Avg latency: 22.19s
+
+✅ Results saved to: corrected_temperature_test_results.json
+================================================================================
