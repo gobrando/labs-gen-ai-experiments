@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 EXCLUDED_USER_EMAILS: Set[str] = {
     'kasminscott@gmail.com',
     'nava.product@gwctx.com',
-    'jessica.bunting@gwctx.org',
+    'excluded.user@gwctx.org',
 }
 
 NAVAPBC_EMAIL_DOMAIN_PATTERN = r'@navapbc\.[a-z0-9.-]+$'

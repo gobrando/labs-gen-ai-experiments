@@ -331,84 +331,84 @@ def main():
         )
 
     # Pilot cohort email defaults (editable in UI)
-    G1_EMAILS_DEFAULT = """deaun.hoffman@gwctx.org
-herminio.chaparro@gwctx.org
-jeremy.hunt@gwctx.org
-jordan.kelch@gwctx.org
-jorge.ortiz@gwctx.org
-lisa.chavez@gwctx.org
-mary.medrano@gwctx.org
-michelle.clark@gwctx.org
-nessa.martin@gwctx.org
-nora.moreno@gwctx.org
-presley.price@gwctx.org
-rachel.mignemi@gwctx.org
-robert.bachman@gwctx.org
-sandra.mcdowell@gwctx.org
-scarlett.miears@gwctx.org
-tavonn.uresti@gwctx.org"""
+    G1_EMAILS_DEFAULT = """user01@gwctx.org
+user02@gwctx.org
+user03@gwctx.org
+user04@gwctx.org
+user05@gwctx.org
+user06@gwctx.org
+user07@gwctx.org
+user08@gwctx.org
+user09@gwctx.org
+user10@gwctx.org
+user11@gwctx.org
+user12@gwctx.org
+user13@gwctx.org
+user14@gwctx.org
+user15@gwctx.org
+user16@gwctx.org"""
 
-    G2_EMAILS_DEFAULT = """adryan.mcguire@gwctx.org
-alyssa.cabello@gwctx.org
-amber.carrizales@gwctx.org
-brenda.warner@gwctx.org
-daniel.ayala@gwctx.org
-dora.mcafee@gwctx.org
-eric.sherman@gwctx.org
-farah.alabdallah@gwctx.org
-jerry.harris@gwctx.org
-josette.krebuszewski@gwctx.org
-marea.warren-hernandez@gwctx.org
-morgan.marley@gwctx.org
-orlando.perez@gwctx.org
-rafal.cygankow@gwctx.org
-roddrick.gaines@gwctx.org
-vincent.giddens@gwctx.org"""
+    G2_EMAILS_DEFAULT = """user17@gwctx.org
+user18@gwctx.org
+user19@gwctx.org
+user20@gwctx.org
+user21@gwctx.org
+user22@gwctx.org
+user23@gwctx.org
+user24@gwctx.org
+user25@gwctx.org
+user26@gwctx.org
+user27@gwctx.org
+user28@gwctx.org
+user29@gwctx.org
+user30@gwctx.org
+user31@gwctx.org
+user32@gwctx.org"""
 
-    G3_EMAILS_DEFAULT = """ahmarlay.myint@gwctx.org
-alyxandria.currington@gwctx.org
-beth.burnett@gwctx.org
-brian.shade@gwctx.org
-daniella.owens@gwctx.org
-elyse.waugh@gwctx.org
-erin.delorme@gwctx.org
-gyanu.gautam@gwctx.org
-jonah.benedict@gwctx.org
-kennedy.pasquinzo@gwctx.org
-mary.rudinsky@gwctx.org
-natalie.watkins@gwctx.org
-reva.conley@gwctx.org
-samirrah.cooke@gwctx.org
-zwany.batista@gwctx.org"""
+    G3_EMAILS_DEFAULT = """user33@gwctx.org
+user34@gwctx.org
+user35@gwctx.org
+user36@gwctx.org
+user37@gwctx.org
+user38@gwctx.org
+user39@gwctx.org
+user40@gwctx.org
+user41@gwctx.org
+user42@gwctx.org
+user43@gwctx.org
+user44@gwctx.org
+user45@gwctx.org
+user46@gwctx.org
+user47@gwctx.org"""
 
-    KEYSTONE_EMAILS_DEFAULT = """cgarr@yourgoodwill.org
-bjeckson@yourgoodwill.org
-cmitchell@yourgoodwill.org
-tgilbert@yourgoodwill.org
-gcook@yourgoodwill.org
-fjones@yourgoodwill.org
-abond@yourgoodwill.org
-pmedori@yourgoodwill.org
-aelias@yourgoodwill.org
-sponcelet@yourgoodwill.org
-mkensinger@yourgoodwill.org
-klee@yourgoodwill.org
-mmercer@yourgoodwill.org
-lmcalsose@yourgoodwill.org
-rkraynek@yourgoodwill.org
-bforschner@yourgoodwill.org
-flopez@yourgoodwill.org
-etrinkl@yourgoodwill.org
-kmchugh@yourgoodwill.org"""
+    KEYSTONE_EMAILS_DEFAULT = """user01@yourgoodwill.org
+user02@yourgoodwill.org
+user03@yourgoodwill.org
+user04@yourgoodwill.org
+user05@yourgoodwill.org
+user06@yourgoodwill.org
+user07@yourgoodwill.org
+user08@yourgoodwill.org
+user09@yourgoodwill.org
+user10@yourgoodwill.org
+user11@yourgoodwill.org
+user12@yourgoodwill.org
+user13@yourgoodwill.org
+user14@yourgoodwill.org
+user15@yourgoodwill.org
+user16@yourgoodwill.org
+user17@yourgoodwill.org
+user18@yourgoodwill.org
+user19@yourgoodwill.org"""
 
-    CAB_EMAILS_DEFAULT = """jswann40@yahoo.com
-lukearodriguez07@gmail.com
-malikjkobethomas@gmail.com
-marielacalanchi3@gmail.com
-mtmaguire@gmail.com
-mleake86@gmail.com
-chanelunknown1@gmail.com
-ritadecarlo675@gmail.com"""
+    CAB_EMAILS_DEFAULT = """user01@example.com
+user02@example.com
+user03@example.com
+user04@example.com
+user05@example.com
+user06@example.com
+user07@example.com
+user08@example.com"""
 
     def _parse_emails(text: str) -> set:
         return {e.strip().lower() for e in (text or "").splitlines() if e.strip()}
@@ -1579,37 +1579,37 @@ ritadecarlo675@gmail.com"""
 
         # Keystone name lookup (for display purposes)
         keystone_name_lookup = {
-            'cgarr@yourgoodwill.org': 'Cheryl Garr',
-            'bjeckson@yourgoodwill.org': 'Becky Jackson',
-            'cmitchell@yourgoodwill.org': 'Chris Mitchell',
-            'tgilbert@yourgoodwill.org': 'Taylor Gilbert',
-            'gcook@yourgoodwill.org': 'Griffin Cook',
-            'fjones@yourgoodwill.org': 'Faith Jones',
-            'abond@yourgoodwill.org': 'Adele Bond',
-            'pmedori@yourgoodwill.org': 'Pauline Medori',
-            'aelias@yourgoodwill.org': 'Alyssa Elias',
-            'sponcelet@yourgoodwill.org': 'Stephane Poncelet',
-            'mkensinger@yourgoodwill.org': 'Michele Kensinger',
-            'klee@yourgoodwill.org': 'Kristine Lee',
-            'mmercer@yourgoodwill.org': 'Madeline Mercer',
-            'lmcalsose@yourgoodwill.org': 'Lucy McAlouse',
-            'rkraynek@yourgoodwill.org': 'Rebekah Kraynek',
-            'bforschner@yourgoodwill.org': 'Brent Forschner',
-            'flopez@yourgoodwill.org': 'Flor Lopez',
-            'etrinkl@yourgoodwill.org': 'Elaine Trinkl',
-            'kmchugh@yourgoodwill.org': 'Kelly McHugh',
+            'user01@yourgoodwill.org': 'Keystone User 1',
+            'user02@yourgoodwill.org': 'Keystone User 2',
+            'user03@yourgoodwill.org': 'Keystone User 3',
+            'user04@yourgoodwill.org': 'Keystone User 4',
+            'user05@yourgoodwill.org': 'Keystone User 5',
+            'user06@yourgoodwill.org': 'Keystone User 6',
+            'user07@yourgoodwill.org': 'Keystone User 7',
+            'user08@yourgoodwill.org': 'Keystone User 8',
+            'user09@yourgoodwill.org': 'Keystone User 9',
+            'user10@yourgoodwill.org': 'Keystone User 10',
+            'user11@yourgoodwill.org': 'Keystone User 11',
+            'user12@yourgoodwill.org': 'Keystone User 12',
+            'user13@yourgoodwill.org': 'Keystone User 13',
+            'user14@yourgoodwill.org': 'Keystone User 14',
+            'user15@yourgoodwill.org': 'Keystone User 15',
+            'user16@yourgoodwill.org': 'Keystone User 16',
+            'user17@yourgoodwill.org': 'Keystone User 17',
+            'user18@yourgoodwill.org': 'Keystone User 18',
+            'user19@yourgoodwill.org': 'Keystone User 19',
         }
 
         # CAB name lookup (for display purposes)
         cab_name_lookup = {
-            'jswann40@yahoo.com': 'Jodi Swann',
-            'lukearodriguez07@gmail.com': 'Luke Rodriguez',
-            'malikjkobethomas@gmail.com': 'Malik Jkobe Thomas',
-            'marielacalanchi3@gmail.com': 'Mariela Calanchi',
-            'mtmaguire@gmail.com': 'Mark Maguire',
-            'mleake86@gmail.com': 'Mary Leake',
-            'chanelunknown1@gmail.com': 'Nova Sannoh',
-            'ritadecarlo675@gmail.com': 'Rita DeCarlo'
+            'user01@example.com': 'CAB User 1',
+            'user02@example.com': 'CAB User 2',
+            'user03@example.com': 'CAB User 3',
+            'user04@example.com': 'CAB User 4',
+            'user05@example.com': 'CAB User 5',
+            'user06@example.com': 'CAB User 6',
+            'user07@example.com': 'CAB User 7',
+            'user08@example.com': 'CAB User 8',
         }
         
         # Report configuration

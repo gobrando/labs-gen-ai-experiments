@@ -19,8 +19,7 @@ import hmac
 # AUTHENTICATION
 # =============================================================================
 ALLOWED_USERS = {
-    "brandoncanniff@navapbc.com": "nava2026",
-    "christinewilkes@navapbc.com": "nava2026",
+    "user@example.com": "change-me",
 }
 
 def check_password():
@@ -66,7 +65,7 @@ def check_password():
             st.markdown('<div class="login-subtitle">Enter your credentials to access the dashboard</div>', unsafe_allow_html=True)
             
             with st.form("login"):
-                email = st.text_input("Email", placeholder="you@navapbc.com")
+                email = st.text_input("Email", placeholder="you@example.com")
                 password = st.text_input("Password", type="password", placeholder="Enter password")
                 submitted = st.form_submit_button("Sign In", use_container_width=True)
                 
