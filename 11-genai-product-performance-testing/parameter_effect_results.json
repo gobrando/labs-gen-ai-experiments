@@ -1,0 +1,141 @@
+{
+  "baseline": {
+    "description": "Production prompt with CAT/Excel resources only",
+    "web_search_rate": 96.4,
+    "note": "Missing ~hundreds of database-injected resources"
+  },
+  "tests": [
+    {
+      "config": "Baseline (reasoning=none)",
+      "model": "gpt-5.1",
+      "reasoning": "none",
+      "temperature": null,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 24.460849368572234,
+      "errors": []
+    },
+    {
+      "config": "Temperature 0.0",
+      "model": "gpt-5.1",
+      "reasoning": null,
+      "temperature": 0.0,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 22.104242515563964,
+      "errors": []
+    },
+    {
+      "config": "Temperature 0.5",
+      "model": "gpt-5.1",
+      "reasoning": null,
+      "temperature": 0.5,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 19.942445826530456,
+      "errors": []
+    },
+    {
+      "config": "Temperature 1.0",
+      "model": "gpt-5.1",
+      "reasoning": null,
+      "temperature": 1.0,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 17.86416163444519,
+      "errors": []
+    },
+    {
+      "config": "Temperature 1.5",
+      "model": "gpt-5.1",
+      "reasoning": null,
+      "temperature": 1.5,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 26.745511865615846,
+      "errors": []
+    },
+    {
+      "config": "Temperature 2.0",
+      "model": "gpt-5.1",
+      "reasoning": null,
+      "temperature": 2.0,
+      "web_search_rate": 89.47368421052632,
+      "web_search_count": 17,
+      "total_queries": 19,
+      "avg_latency": 8460.523493151915,
+      "errors": [
+        {
+          "query": "Include resources that support the following categories: Housing & Shelter",
+          "error": "Request timed out."
+        }
+      ]
+    },
+    {
+      "config": "Reasoning low",
+      "model": "gpt-5.1",
+      "reasoning": "low",
+      "temperature": null,
+      "web_search_rate": 90.0,
+      "web_search_count": 18,
+      "total_queries": 20,
+      "avg_latency": 52.13643798828125,
+      "errors": []
+    },
+    {
+      "config": "Reasoning medium",
+      "model": "gpt-5.1",
+      "reasoning": "medium",
+      "temperature": null,
+      "web_search_rate": 95.0,
+      "web_search_count": 19,
+      "total_queries": 20,
+      "avg_latency": 156.21656547784806,
+      "errors": []
+    },
+    {
+      "config": "Reasoning high",
+      "model": "gpt-5.1",
+      "reasoning": "high",
+      "temperature": null,
+      "web_search_rate": 100.0,
+      "web_search_count": 16,
+      "total_queries": 16,
+      "avg_latency": 1057.6160653084517,
+      "errors": [
+        {
+          "query": "What CAT classes are currently offered at the Goodwill Community Center? Client needs short-term training before starting full GCTA program.\nFocus on resources close to the following location: in Williamson County",
+          "error": "Connection error."
+        },
+        {
+          "query": "Include resources that support the following categories: Housing & Shelter",
+          "error": "Connection error."
+        },
+        {
+          "query": "Interview trainings",
+          "error": "Connection error."
+        },
+        {
+          "query": "ACC medical assistant programs",
+          "error": "Connection error."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "temperature_range": "0.0 to 2.0 (with reasoning=none)",
+    "reasoning_levels": [
+      "none",
+      "low",
+      "medium",
+      "high"
+    ],
+    "queries_per_test": 20,
+    "total_tests": 9
+  }
+}
