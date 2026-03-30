@@ -58,9 +58,10 @@ def _resolve_paths(config: dict, base_dir: Path) -> dict:
     """Resolve relative paths in config to absolute paths."""
     sim = config.get('simulation', {})
 
-    # Resolve version template paths
+    # Resolve version template paths (only for local/file-based sources)
     for version in sim.get('versions', []):
-        if 'template_path' in version:
+        source = version.get('source', 'local')
+        if source == 'local' and 'template_path' in version:
             p = Path(version['template_path'])
             if not p.is_absolute():
                 version['template_path'] = str(base_dir / p)

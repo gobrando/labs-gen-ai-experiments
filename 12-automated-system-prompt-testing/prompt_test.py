@@ -6,6 +6,7 @@ Subcommands:
     evaluate  - Run quality dimensions on outputs
     compare   - Generate comparison report
     run       - Run all three steps in sequence
+    web       - Launch web UI with Phoenix integration
 
 Usage:
     python prompt_test.py run --config sample_data/config.yaml
@@ -13,6 +14,7 @@ Usage:
     python prompt_test.py simulate --config config.yaml --limit 3
     python prompt_test.py evaluate --config config.yaml --skip-urls
     python prompt_test.py compare --config config.yaml
+    python prompt_test.py web --port 5001
 """
 import sys
 import json
@@ -94,6 +96,13 @@ def cmd_compare(args):
     logger.info(f"Report saved to {report_path}")
 
 
+def cmd_web(args):
+    """Launch the web UI for interactive A/B testing."""
+    from app import start_app
+    logger.info(f'Starting web UI on http://127.0.0.1:{args.port}')
+    start_app(port=args.port, debug=args.debug, open_browser=not args.no_browser)
+
+
 def cmd_run(args):
     """Run all steps: simulate -> evaluate -> compare."""
     logger.info('=' * 60)
@@ -152,6 +161,12 @@ def main():
     p_run.add_argument('--limit', type=int, default=0, help='Limit number of queries')
     p_run.add_argument('--skip-urls', action='store_true', help='Skip URL validation')
 
+    # web UI
+    p_web = subparsers.add_parser('web', help='Launch web UI for interactive A/B testing')
+    p_web.add_argument('--port', type=int, default=5001, help='Port number (default: 5001)')
+    p_web.add_argument('--debug', action='store_true', help='Enable Flask debug mode')
+    p_web.add_argument('--no-browser', action='store_true', help='Do not auto-open browser')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -163,6 +178,7 @@ def main():
         'evaluate': cmd_evaluate,
         'compare': cmd_compare,
         'run': cmd_run,
+        'web': cmd_web,
     }
     commands[args.command](args)
 

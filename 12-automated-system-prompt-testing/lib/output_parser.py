@@ -42,6 +42,15 @@ def parse_json(raw_content: str) -> tuple[dict | None, str | None]:
         except json.JSONDecodeError:
             pass
 
+    # Try first [ to last ] (for top-level arrays)
+    first_bracket = raw_content.find('[')
+    last_bracket = raw_content.rfind(']')
+    if first_bracket >= 0 and last_bracket > first_bracket:
+        try:
+            return json.loads(raw_content[first_bracket:last_bracket + 1]), None
+        except json.JSONDecodeError:
+            pass
+
     return None, f'Could not parse JSON from response ({len(raw_content)} chars)'
 
 
@@ -59,7 +68,15 @@ def extract_resources(parsed_json: dict | None, resource_path: str = 'resources'
     if not parsed_json:
         return []
 
-    # Navigate dot-separated path
+    # If the top-level IS already a list of resource dicts, return it directly
+    if isinstance(parsed_json, list):
+        if len(parsed_json) > 0 and isinstance(parsed_json[0], dict):
+            # Check if items look like resources (have 'name' key)
+            if 'name' in parsed_json[0]:
+                return parsed_json
+        return []
+
+    # Navigate dot-separated path for dict-wrapped responses
     parts = resource_path.split('.')
     current = parsed_json
 

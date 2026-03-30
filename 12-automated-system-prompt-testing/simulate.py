@@ -27,8 +27,54 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def run_simulation(config: dict, dry_run: bool = False, limit: int = 0) -> list[dict]:
-    """Run simulation across all versions and queries."""
+def _load_template(version_config: dict) -> str:
+    """Load template text from the configured source.
+
+    Supports:
+      - local (default): read from template_path file
+      - phoenix: fetch from Phoenix API by prompt_name + version
+      - inline: use template_text directly
+    """
+    source = version_config.get('source', 'local')
+    name = version_config.get('name', '?')
+
+    if source == 'inline':
+        text = version_config.get('template_text', '')
+        if not text:
+            raise ValueError(f"Version '{name}': inline source requires template_text")
+        return text
+
+    if source == 'phoenix':
+        from lib.phoenix_prompt_client import PhoenixPromptClient
+        prompt_name = version_config.get('prompt_name')
+        if not prompt_name:
+            raise ValueError(f"Version '{name}': phoenix source requires prompt_name")
+        client = PhoenixPromptClient(
+            url=version_config.get('phoenix_url'),
+            api_key=version_config.get('phoenix_api_key'),
+        )
+        version_spec = version_config.get('version', 'latest')
+        if version_spec == 'latest':
+            pv = client.get_prompt_latest(prompt_name)
+        else:
+            pv = client.get_prompt_version(prompt_name, int(version_spec))
+        logger.info(f"Fetched '{prompt_name}' v{pv.sequence_number} from Phoenix ({len(pv.template_text)} chars)")
+        return pv.template_text
+
+    # Default: local file
+    path = Path(version_config['template_path'])
+    if not path.exists():
+        raise FileNotFoundError(f"Template not found for {name}: {path}")
+    return path.read_text()
+
+
+def run_simulation(config: dict, dry_run: bool = False, limit: int = 0,
+                   on_query_complete=None) -> list[dict]:
+    """Run simulation across all versions and queries.
+
+    Args:
+        on_query_complete: Optional callback(index, total, entry) called after each query.
+    """
     sim_config = config['simulation']
     versions = sim_config['versions']
     model = sim_config.get('model', 'gpt-4o')
@@ -36,16 +82,14 @@ def run_simulation(config: dict, dry_run: bool = False, limit: int = 0) -> list[
     template_format = sim_config.get('template_format', 'jinja2')
     message_format = sim_config.get('message_format', 'system_only')
     rate_limit_delay = sim_config.get('rate_limit_delay', 2.0)
+    web_search = sim_config.get('web_search', False)
     resource_path = config.get('evaluation', {}).get('resource_path', 'resources')
 
     # Load templates
     templates = {}
     for v in versions:
         name = v['name']
-        path = Path(v['template_path'])
-        if not path.exists():
-            raise FileNotFoundError(f"Template not found for {name}: {path}")
-        templates[name] = path.read_text()
+        templates[name] = _load_template(v)
         logger.info(f"Loaded template '{name}': {len(templates[name])} chars")
 
     # Load test corpus
@@ -93,8 +137,13 @@ def run_simulation(config: dict, dry_run: bool = False, limit: int = 0) -> list[
             if key not in variables:
                 variables[key] = val
 
+        # Build a lookup for per-version overrides
+        version_lookup = {v['name']: v for v in versions}
+
         for vname in version_names:
-            rendered = render_template(templates[vname], variables, template_format)
+            v_cfg = version_lookup.get(vname, {})
+            v_format = v_cfg.get('template_format', template_format)
+            rendered = render_template(templates[vname], variables, v_format)
 
             if dry_run:
                 entry[vname] = {
@@ -105,12 +154,16 @@ def run_simulation(config: dict, dry_run: bool = False, limit: int = 0) -> list[
 
             try:
                 logger.info(f"  Calling {vname}...")
+                t0 = time.time()
                 resp = call_openai(
                     system_prompt=rendered,
                     model=model,
                     temperature=temperature,
                     message_format=message_format,
+                    reasoning=sim_config.get('reasoning', 'none'),
+                    web_search=web_search,
                 )
+                latency_ms = round((time.time() - t0) * 1000)
                 parsed, parse_err = parse_json(resp['content'])
                 resources = extract_resources(parsed, resource_path)
 
@@ -122,14 +175,22 @@ def run_simulation(config: dict, dry_run: bool = False, limit: int = 0) -> list[
                     'resource_count': len(resources),
                     'usage': resp['usage'],
                     'finish_reason': resp['finish_reason'],
+                    'latency_ms': latency_ms,
+                    'web_search_used': resp.get('web_search_used', False),
                 }
             except Exception as e:
                 logger.error(f"  {vname} API error: {e}")
-                entry[vname] = {'error': str(e)}
+                entry[vname] = {'error': str(e), 'latency_ms': 0}
 
             time.sleep(1)
 
         results.append(entry)
+
+        if on_query_complete and not dry_run:
+            try:
+                on_query_complete(i, len(test_corpus), entry)
+            except Exception as cb_err:
+                logger.warning(f"Progress callback error: {cb_err}")
 
         if i < len(test_corpus) - 1:
             time.sleep(rate_limit_delay)

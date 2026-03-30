@@ -6,6 +6,8 @@ Test and compare system prompt versions automatically. Given a baseline prompt a
 2. **Evaluates** — Scores outputs on up to 8 configurable quality dimensions
 3. **Compares** — Generates a markdown report with pairwise wins, flag counts, and regressions
 
+Also includes a **web UI** with Phoenix integration for interactive testing.
+
 ## Quickstart
 
 ```bash
@@ -110,6 +112,50 @@ You are a helpful assistant.
 
 Available variables: `query`, `location`, `resources_context`, `categories`, plus any extra fields from your test corpus entries.
 
+## Phoenix Integration
+
+Pull your production prompt directly from Phoenix as the baseline, and deploy winning variants back.
+
+### Setup
+
+Add Phoenix credentials to `.env`:
+
+```
+PHOENIX_URL=https://phoenix.your-instance.com:6006
+PHOENIX_API_KEY=your-api-key
+```
+
+### Using Phoenix as a prompt source (CLI)
+
+In your config YAML, set `source: phoenix` on a version:
+
+```yaml
+simulation:
+  versions:
+    - name: production
+      source: phoenix
+      prompt_name: generate_referrals_centraltx
+      version: latest    # or a specific number
+      template_format: plain
+    - name: variant
+      template_path: prompts/my_variant.txt
+```
+
+### Web UI
+
+Launch the browser-based UI for interactive testing:
+
+```bash
+python prompt_test.py web --port 5001
+```
+
+The web UI lets you:
+- Browse Phoenix prompts and load any version as baseline
+- Edit a variant in a side-by-side editor
+- Configure model, temperature, test corpus, and evaluation dimensions
+- Run A/B tests and view the comparison report inline
+- Deploy winning variants back to Phoenix
+
 ## CLI Reference
 
 ```bash
@@ -123,6 +169,10 @@ python prompt_test.py run --config config.yaml --dry-run
 python prompt_test.py simulate --config config.yaml --limit 3
 python prompt_test.py evaluate --config config.yaml --skip-urls
 python prompt_test.py compare --config config.yaml
+
+# Launch web UI
+python prompt_test.py web
+python prompt_test.py web --port 8080 --no-browser
 ```
 
 ## Adapting for Your Use Case

@@ -6,11 +6,26 @@
 
 simulation:
   # Prompt versions to test (at least 2)
+  # Each version supports a 'source' field:
+  #   local (default) — reads from template_path file
+  #   phoenix         — fetches from Phoenix API
+  #   inline          — uses template_text directly
   versions:
     - name: baseline
       template_path: sample_data/prompts/baseline.txt
+      # source: local  (default, can be omitted)
     - name: improved
       template_path: sample_data/prompts/improved.txt
+
+  # Example: pull baseline from Phoenix instead of a local file
+  # versions:
+  #   - name: production
+  #     source: phoenix
+  #     prompt_name: generate_referrals_centraltx
+  #     version: latest  # or a specific number like 53
+  #     template_format: plain  # per-version override
+  #   - name: variant
+  #     template_path: prompts/my_variant.txt
 
   # Path to test corpus JSON file
   # Each entry needs at minimum: id, query
@@ -82,3 +97,9 @@ evaluation:
 report:
   title: "Prompt A/B Test Results"
   output_path: results/comparison_report.md
+
+# Phoenix integration (optional — for 'source: phoenix' and web UI)
+# Credentials can also be set via PHOENIX_URL and PHOENIX_API_KEY env vars
+# phoenix:
+#   url: https://phoenix.your-instance.com:6006
+#   api_key: your-api-key  # prefer env var instead
