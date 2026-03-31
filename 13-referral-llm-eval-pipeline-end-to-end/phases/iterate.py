@@ -171,3 +171,59 @@ def run_iterate(config: dict) -> dict | None:
         json.dump(eval_results, f, indent=2, default=str)
 
     return {'eval_results': eval_results, 'metrics': metrics, 'report_path': str(report_path)}
+
+
+def determine_winner(eval_results: list[dict], version_names: list[str]) -> dict:
+    """Determine which version has fewer total flags.
+
+    Args:
+        eval_results: List of per-query eval dicts with version sub-dicts.
+        version_names: List of version names to compare.
+
+    Returns:
+        Dict with 'winner', 'flag_totals', and 'per_version_flags'.
+    """
+    flag_totals = {}
+    per_version_flags = {}
+
+    for vname in version_names:
+        total = 0
+        all_flags = []
+        for r in eval_results:
+            v_data = r.get(vname, {})
+            flags = v_data.get('flags', [])
+            total += len(flags)
+            all_flags.extend(flags)
+        flag_totals[vname] = total
+        per_version_flags[vname] = all_flags
+
+    min_flags = min(flag_totals.values())
+    winners = [v for v, count in flag_totals.items() if count == min_flags]
+    winner = winners[0] if len(winners) == 1 else version_names[0]  # prefer baseline on tie
+
+    return {
+        'winner': winner,
+        'flag_totals': flag_totals,
+        'per_version_flags': per_version_flags,
+    }
+
+
+def deploy_winner(template_text: str, prompt_name: str, description: str,
+                   phoenix_client) -> dict:
+    """Deploy the winning prompt version to Phoenix.
+
+    Args:
+        template_text: The prompt template text to deploy.
+        prompt_name: Phoenix prompt name.
+        description: Version description.
+        phoenix_client: PhoenixPromptClient instance.
+
+    Returns:
+        Deploy response from Phoenix API.
+    """
+    logger.info(f"Deploying to Phoenix prompt '{prompt_name}': {description}")
+    return phoenix_client.deploy_version(
+        prompt_name=prompt_name,
+        template_text=template_text,
+        description=description,
+    )

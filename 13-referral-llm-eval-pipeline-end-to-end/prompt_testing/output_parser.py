@@ -21,7 +21,11 @@ def parse_json(raw_content: str) -> tuple[dict | None, str | None]:
 
     # Try direct parse
     try:
-        return json.loads(raw_content), None
+        parsed = json.loads(raw_content)
+        # Wrap top-level arrays into a dict for consistent downstream handling
+        if isinstance(parsed, list):
+            return {'resources': parsed}, None
+        return parsed, None
     except json.JSONDecodeError:
         pass
 
@@ -29,7 +33,10 @@ def parse_json(raw_content: str) -> tuple[dict | None, str | None]:
     code_block = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', raw_content, re.DOTALL)
     if code_block:
         try:
-            return json.loads(code_block.group(1)), None
+            parsed = json.loads(code_block.group(1))
+            if isinstance(parsed, list):
+                return {'resources': parsed}, None
+            return parsed, None
         except json.JSONDecodeError:
             pass
 
@@ -39,6 +46,17 @@ def parse_json(raw_content: str) -> tuple[dict | None, str | None]:
     if first_brace >= 0 and last_brace > first_brace:
         try:
             return json.loads(raw_content[first_brace:last_brace + 1]), None
+        except json.JSONDecodeError:
+            pass
+
+    # Try first [ to last ] (top-level array)
+    first_bracket = raw_content.find('[')
+    last_bracket = raw_content.rfind(']')
+    if first_bracket >= 0 and last_bracket > first_bracket:
+        try:
+            parsed = json.loads(raw_content[first_bracket:last_bracket + 1])
+            if isinstance(parsed, list):
+                return {'resources': parsed}, None
         except json.JSONDecodeError:
             pass
 
@@ -58,6 +76,10 @@ def extract_resources(parsed_json: dict | None, resource_path: str = 'resources'
     """
     if not parsed_json:
         return []
+
+    # Handle top-level array (LLM returned resources directly as a list)
+    if isinstance(parsed_json, list):
+        return parsed_json
 
     # Navigate dot-separated path
     parts = resource_path.split('.')

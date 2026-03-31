@@ -73,3 +73,18 @@ analysis:
 #   temperature: 0.7
 #   template_format: jinja2
 #   rate_limit_delay: 2.0
+
+# Automated prompt optimization loop (requires OPENAI_API_KEY + PHOENIX_URL)
+# Loads a prompt, evaluates it, generates improved variants via LLM,
+# A/B tests them, and repeats until flags are below threshold.
+# optimize:
+#   prompt_name: generate_referrals_centraltx  # Load from Phoenix
+#   # prompt_file: prompts/baseline.txt        # OR load from local file
+#   test_corpus_path: test_corpus.json         # Required: test queries
+#   model: gpt-4o                              # Model for simulation
+#   temperature: 0.7
+#   template_format: jinja2
+#   max_iterations: 5                          # Hard cap on loop iterations
+#   flag_threshold: 2                          # Stop if total flags <= N
+#   auto_deploy: false                         # Deploy to Phoenix when done?
+#   improver_model: gpt-4o                     # Model for generating variants

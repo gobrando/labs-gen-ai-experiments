@@ -35,6 +35,18 @@ DEFAULT_CONFIG = {
         'template_format': 'jinja2',
         'rate_limit_delay': 2.0,
     },
+    'optimize': {
+        'prompt_name': '',
+        'prompt_file': '',
+        'test_corpus_path': '',
+        'model': 'gpt-4o',
+        'temperature': 0.7,
+        'template_format': 'jinja2',
+        'max_iterations': 5,
+        'flag_threshold': 2,
+        'auto_deploy': False,
+        'improver_model': 'gpt-4o',
+    },
 }
 
 
@@ -92,6 +104,14 @@ def _resolve_paths(config: dict, base_dir: Path) -> dict:
         p = Path(iteration['test_corpus_path'])
         if not p.is_absolute():
             iteration['test_corpus_path'] = str(base_dir / p)
+
+    # Resolve optimize paths
+    optimize = config.get('optimize', {})
+    for key in ('prompt_file', 'test_corpus_path'):
+        if key in optimize and optimize[key]:
+            p = Path(optimize[key])
+            if not p.is_absolute():
+                optimize[key] = str(base_dir / p)
 
     # Resolve sample data paths
     if 'sample_data' in config:
