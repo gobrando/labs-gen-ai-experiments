@@ -118,6 +118,60 @@ See [`docs/adapters.md`](docs/adapters.md) for writing custom adapters.
 
 See [`docs/methodology.md`](docs/methodology.md) for the full methodology writeup including statistical approach, sampling strategy, and prompt engineering insights.
 
+## Standalone Study: Reasoning Effort vs. Output Quality
+
+`reasoning_quality_test.py` is a one-off experiment that reuses the 7 output-quality dimensions from this pipeline to answer a single question: **does raising OpenAI's `reasoning.effort` parameter improve output quality, or just slow things down?**
+
+An earlier speed test (see experiment 11) showed that higher reasoning levels were 2–14x slower and introduced connection errors. That test did not measure quality. This experiment does.
+
+**Design**
+
+- 20 real production queries (extracted from Phoenix, full RAG context preserved)
+- 4 reasoning levels: `none`, `low`, `medium`, `high`
+- gpt-5.1, temperature=0.5 (fixed for `none`; omitted for the others, which the API requires)
+- Production prompt v53
+- Randomized test order, per-call hard timeout, checkpoint every 10 calls
+- Each output evaluated across the 7 dimensions (`output_structure`, `resource_count`, `url_validity`, `duplicates`, `readability`, `contact_completeness`, `rag_grounding`)
+
+Planned 80 calls; completed 50 across 3 runs after repeated API hangs on `reasoning="high"` (see reliability finding below).
+
+**Findings**
+
+| Level   | Avg flags / query | Avg latency | Web search rate | Completion rate |
+|---------|------------------:|------------:|----------------:|----------------:|
+| none    | **1.71** | **16s**  | 65%  | 85% |
+| low     | 1.83     | 28s      | 83%  | 90% |
+| medium  | 2.00     | 96s      | 88%  | 40% |
+| high    | 2.86     | 252s     | 100% | 35% |
+
+Three findings, all monotonic in reasoning level:
+
+1. **Quality degrades.** Average flags rise from 1.71 (none) to 2.86 (high). In pairwise matchups, `none` won or tied every comparison — it never lost once.
+2. **Latency explodes.** 16s → 252s, a ~16x slowdown for `high`. Web search rate climbs 65% → 100%, which explains some (but not all) of the latency increase.
+3. **Reliability collapses.** `medium` and `high` hung past the 180s timeout on more than half of queries with production-length prompts (~15k char RAG context), requiring process kills across three separate runs.
+
+**Bottom line:** For structured JSON resource-referral tasks, raising `reasoning.effort` is strictly worse on all three axes we care about. The current production config (`reasoning="none"`, `temperature=0.5`) is already optimal and should not change.
+
+**Outputs**
+
+- `reasoning_quality_test.py` — the experiment script
+- `data/production_test_corpus.json` — the 20-query test corpus with full RAG context
+- `data/reasoning_quality_test_results.json` — aggregated per-call results and per-level statistics
+- `docs/analysis/reasoning_quality_report.md` — full writeup with pairwise win rates, per-dimension breakdown, and reliability analysis
+
+Run it yourself (costs ~$3–5 in OpenAI API calls):
+
+```bash
+export OPENAI_API_KEY=sk-...
+python reasoning_quality_test.py
+```
+
+Dry-run the pipeline wiring without making API calls:
+
+```bash
+python reasoning_quality_test.py --dry-run --sample
+```
+
 ## Relationship to Experiment 12
 
 This experiment (13) is the "outer loop" — the full evaluation and optimization pipeline. Experiment 12 is the "inner loop" — focused specifically on prompt A/B testing. Phase 6 (Iterate) bundles the same prompt testing modules as Experiment 12.
